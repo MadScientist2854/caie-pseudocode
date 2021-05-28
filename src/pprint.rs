@@ -1,0 +1,16 @@
+use super::expr::Expr;
+
+pub trait PPrint {
+    fn prettify(&self) -> String;
+}
+
+impl PPrint for Expr {
+    fn prettify(&self) -> String {
+        match self {
+            Expr::Unary(operator, right) => format!("( {} {} )", operator.lexeme, (**right).prettify()),
+            Expr::Binary(left, operator, right) => format!("( {} {} {} )", operator.lexeme, (**left).prettify(), (**right).prettify()),
+            Expr::Grouping(inner) => format!("( {} )", (**inner).prettify()),
+            Expr::Literal(value) => value.lexeme.to_string()
+        }
+    }
+}

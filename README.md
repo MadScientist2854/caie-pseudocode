@@ -5,3 +5,5 @@ an interpreter for the Cambridge pseudocode specification.
 
 to use, install cargo and the rust compiler, and run `cargo run example_src2.txt`  
 easier installation and usage will be available once the project is complete
+
+TODO: include what operator precedence is used, as it isn't explicitly stated in the specs

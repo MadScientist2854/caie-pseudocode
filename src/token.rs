@@ -1,6 +1,7 @@
+#[derive(Clone)]
 pub struct Token {
     ttype: TokenType,
-    lexeme: String,
+    pub lexeme: String,
     line: usize
 }
 
@@ -16,9 +17,13 @@ impl Token {
     pub fn to_string(&self) -> String {
         format!("{:?} token on line {}: {}", self.ttype, self.line, self.lexeme)
     }
+
+    pub fn is_type(&self, ttype: TokenType) -> bool {
+        self.ttype == ttype
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Single-char
     Equal,
@@ -31,7 +36,6 @@ pub enum TokenType {
     Less, Greater,
 
     // Multi-char
-    StarEqual, SlashEqual, PlusEqual, MinusEqual,
     LessEqual, GreaterEqual, NotEqual,
     Arrow,
 
@@ -53,7 +57,6 @@ pub enum TokenType {
     GETRECORD,
     PUTRECORD,
     SEEK,
-    STEP,
     //// Blocks
     PROCEDURE,
     ENDPROCEDURE,
@@ -61,15 +64,15 @@ pub enum TokenType {
     FUNCTION,
     RETURNS,
     ENDFUNCTION,
-    FOR,
+    FOR, TO, STEP,
     ENDFOR,
     IF,
     THEN,
     ELSE,
     ENDIF,
-    CASE,
-    ENDCASE,
+    CASE, OF,
     OTHERWISE,
+    ENDCASE,
     REPEAT,
     UNTIL,
     WHILE,
@@ -88,25 +91,20 @@ pub enum TokenType {
     WRITE,
     APPEND,
     RANDOM,
-    EOF,
-    //// Misc
-    OF,
-    TO,
 
     // Literals
-    Literal(Literal),
-    Identifier
-
-    // Pre-defined functions
-    // RND
-    // RANDOMBETWEEN
-}
-
-#[derive(Debug, Clone)]
-pub enum Literal {
     Int(i32),
     Float(f32),
     Char(char), //''
     String(String), //""
-    Date(i8, i8, i16) // dd/mm/yyyy
+    Date(i8, i8, i16), // dd/mm/yyyy
+    Identifier,
+
+    NL,
+    End
+
+    // Pre-defined functions
+    // RND
+    // RANDOMBETWEEN
+    // EOF
 }
