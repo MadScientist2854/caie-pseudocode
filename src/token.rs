@@ -1,6 +1,6 @@
 #[derive(Clone)]
 pub struct Token {
-    ttype: TokenType,
+    pub ttype: TokenType,
     pub lexeme: String,
     line: usize
 }
@@ -16,10 +16,6 @@ impl Token {
 
     pub fn to_string(&self) -> String {
         format!("{:?} token on line {}: {}", self.ttype, self.line, self.lexeme)
-    }
-
-    pub fn is_type(&self, ttype: TokenType) -> bool {
-        self.ttype == ttype
     }
 }
 

@@ -150,6 +150,7 @@ impl Scanner {
             } else if c.is_alphabetic() {
                 self.scan_ident()
             } else { return Err(()) }
+            // TODO scan date literals
         };
 
         self.start = self.current;
