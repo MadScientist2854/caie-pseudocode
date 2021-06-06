@@ -1,5 +1,4 @@
-use super::token::{Token, TokenType};
-use super::expr::Expr;
+use super::token::{Token, TokenType, Literal};
 use std::{collections::HashMap, str::FromStr};
 
 pub struct Scanner {
@@ -69,12 +68,12 @@ impl Scanner {
                 map.insert("AND".to_string(), TokenType::AND);
                 map.insert("OR".to_string(), TokenType::OR);
                 map.insert("NOT".to_string(), TokenType::NOT);
-                map.insert("TRUE".to_string(), TokenType::TRUE);
-                map.insert("FALSE".to_string(), TokenType::FALSE);
-                map.insert("READ".to_string(), TokenType::READ);
-                map.insert("WRITE".to_string(), TokenType::WRITE);
-                map.insert("APPEND".to_string(), TokenType::APPEND);
-                map.insert("RANDOM".to_string(), TokenType::RANDOM);
+                map.insert("TRUE".to_string(), TokenType::Literal(Literal::TRUE));
+                map.insert("FALSE".to_string(), TokenType::Literal(Literal::FALSE));
+                map.insert("READ".to_string(), TokenType::Literal(Literal::READ));
+                map.insert("WRITE".to_string(), TokenType::Literal(Literal::WRITE));
+                map.insert("APPEND".to_string(), TokenType::Literal(Literal::APPEND));
+                map.insert("RANDOM".to_string(), TokenType::Literal(Literal::RANDOM));
                 map.insert("OF".to_string(), TokenType::OF);
                 map.insert("TO".to_string(), TokenType::TO);
                 map
@@ -194,13 +193,13 @@ impl Scanner {
             while self.peak().is_digit(10) {
                 self.advance();
             }
-            self.new_token(TokenType::Float(
+            self.new_token(TokenType::Literal(Literal::Float(
                 f32::from_str(self.source.get(self.start..self.current).unwrap()).unwrap()
-            ))
+            )))
         } else {
-            self.new_token(TokenType::Int(
+            self.new_token(TokenType::Literal(Literal::Int(
                 i32::from_str(self.source.get(self.start..self.current).unwrap()).unwrap()
-            ))
+            )))
         }
     }
 

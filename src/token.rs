@@ -1,4 +1,6 @@
-#[derive(Clone)]
+use std::fmt::{Display, Formatter};
+
+#[derive(Clone, Debug)]
 pub struct Token {
     pub ttype: TokenType,
     pub lexeme: String,
@@ -13,9 +15,11 @@ impl Token {
             line
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        format!("{:?} token on line {}: {}", self.ttype, self.line, self.lexeme)
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} {}", self.ttype, self.lexeme)
     }
 }
 
@@ -81,19 +85,8 @@ pub enum TokenType {
     AND,
     OR,
     NOT,
-    TRUE,
-    FALSE,
-    READ,
-    WRITE,
-    APPEND,
-    RANDOM,
 
-    // Literals
-    Int(i32),
-    Float(f32),
-    Char(char), //''
-    String(String), //""
-    Date(i8, i8, i16), // dd/mm/yyyy
+    Literal(Literal),
     Identifier,
 
     NL,
@@ -104,3 +97,43 @@ pub enum TokenType {
     // RANDOMBETWEEN
     // EOF
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Literal {
+    TRUE,
+    FALSE,
+    READ,
+    WRITE,
+    APPEND,
+    RANDOM,
+
+    Int(i32),
+    Float(f32),
+    Char(char), //''
+    String(String), //""
+    Date(i8, i8, i16) // dd/mm/yyyy
+}
+
+impl Literal {
+    pub fn to_string(&self) -> String {
+        match self {
+            Literal::TRUE => "TRUE".to_string(),
+            Literal::FALSE => "FALSE".to_string(),
+            Literal::READ => "READ".to_string(),
+            Literal::WRITE => "WRITE".to_string(),
+            Literal::APPEND => "APPEND".to_string(),
+            Literal::RANDOM => "RANDOM".to_string(),
+            Literal::Int(val) => format!("{}", val),
+            Literal::Float(val) => format!("{}", val),
+            Literal::Char(val) => format!("'{}'", val),
+            Literal::String(val) => format!("\"{}\"", val),
+            Literal::Date(d, m, y) => format!("{}/{}/{}", d, m, y),
+        }
+    }
+}
+
+// impl Display for Literal {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", self.to_string())
+//     }
+// }

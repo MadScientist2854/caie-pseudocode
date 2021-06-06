@@ -4,13 +4,14 @@ use scanner::Scanner;
 mod parser;
 
 mod token;
-use token::{Token, TokenType};
 mod expr;
 mod pprint;
+mod interpreter;
 
 use std::io::{Read, Result};
-use expr::Expr;
 use pprint::PPrint;
+use interpreter::Interpreter;
+use token::Literal;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -20,20 +21,6 @@ fn main() -> Result<()> {
     } else {
         println!(r#"Usage: camps <file name>"#)
     }
-
-    // let e = Expr::Grouping(Box::new(
-    //     Expr::Binary(Box::new(
-    //         Expr::Literal(Token::new(TokenType::Int(5), "5".to_string(), 0))
-    //     ),
-    //     Token::new(TokenType::Plus, "+".to_string(), 0),
-    //     Box::new(Expr::Unary(
-    //         Token::new(TokenType::Minus, "-".to_string(), 0),
-    //         Box::new(
-    //             Expr::Literal(Token::new(TokenType::Int(5), "5".to_string(), 0))
-    //         )
-    //     )))
-    // ));
-    // println!("{}", e.prettify());
 
     Ok(())
 }
@@ -47,11 +34,12 @@ fn parse_file(path: String) -> Result<()> {
     let mut scanner = Scanner::new(contents);
     match scanner.scan_tokens() {
         Ok(tokens) => {
-            for token in tokens.clone() {
-                println!("{}", token.to_string());
-            }
+            // for token in tokens.clone() {
+            //     println!("{}", token);
+            // }
             let mut parser = Parser::new(tokens);
-            println!("{}", parser.expr().prettify())
+            let expr = parser.parse();
+            println!("{}", expr.interpret().to_string());
         },
         // Err((line, message)) => {println!("{}", message)}
         Err(_) => {}

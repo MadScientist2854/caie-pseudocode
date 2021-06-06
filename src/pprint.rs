@@ -10,7 +10,7 @@ impl PPrint for Expr {
             Expr::Unary(operator, right) => format!("( {} {} )", operator.lexeme, (**right).prettify()),
             Expr::Binary(left, operator, right) => format!("( {} {} {} )", operator.lexeme, (**left).prettify(), (**right).prettify()),
             Expr::Grouping(inner) => format!("( {} )", (**inner).prettify()),
-            Expr::Literal(value) => value.lexeme.to_string()
+            Expr::Literal(value) => value.clone().to_string()
         }
     }
 }
