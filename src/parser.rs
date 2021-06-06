@@ -2,13 +2,14 @@ use core::panic;
 
 use super::token::{Token, TokenType};
 use super::expr::Expr;
+use super::stmt::Stmt;
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize
 }
 
-struct ParseError {
+pub struct ParseError {
     pub msg: String,
     pub token: Token
 }
@@ -30,9 +31,9 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Expr {
-        match self.expr() { // TODO: move this into all statement productions
-            Ok(expr) => expr,
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        match self.program() { // TODO: move this into all statement productions
+            Ok(stmts) => stmts,
             Err(err) => match err.token.ttype {
                 TokenType::End => panic!("error at end: {}", err.msg),
                 _ => panic!("error at token {}: {}", err.token, err.msg)
@@ -57,7 +58,26 @@ impl Parser {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-    // fn statement(&self) -> Expr {}
+    fn program(&mut self) -> Result<Vec<Stmt>, ParseError> {
+        let mut statements = Vec::new();
+        while !self.is_at_end() { statements.push(self.statement()?) }
+        Ok(statements)
+    }
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        match self.peak().ttype {
+            TokenType::OUTPUT => {
+                self.advance();
+                let mut exprs = Vec::new();
+                exprs.push(self.expr()?);
+                while self.peak().ttype == TokenType::Comma {
+                    self.advance();
+                    exprs.push(self.expr()?);
+                }
+                Ok(Stmt::Output(exprs))
+            },
+            _ => Ok(Stmt::ExprStmt(Box::new(self.expr()?)))
+        }
+    }
 
     pub fn expr(&mut self) -> Result<Expr, ParseError> {
         self.equality()

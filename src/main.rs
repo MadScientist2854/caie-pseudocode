@@ -5,6 +5,7 @@ mod parser;
 
 mod token;
 mod expr;
+mod stmt;
 mod pprint;
 mod interpreter;
 
@@ -38,8 +39,10 @@ fn parse_file(path: String) -> Result<()> {
             //     println!("{}", token);
             // }
             let mut parser = Parser::new(tokens);
-            let expr = parser.parse();
-            println!("{}", expr.interpret().to_string());
+            let stmts = parser.parse();
+            for stmt in stmts {
+                stmt.interpret();
+            }
         },
         // Err((line, message)) => {println!("{}", message)}
         Err(_) => {}

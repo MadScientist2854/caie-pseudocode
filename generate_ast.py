@@ -3,7 +3,11 @@ import sys
 def define_ast(out_dir, base_name, types):
     path  = out_dir + "/" + base_name.lower() + ".rs"
     with open(path, "w") as f:
-        f.write("use super::token::Token;\n\npub enum " + base_name + " {\n")
+        if base_name == "Stmt":
+            f.write("use super::expr::Expr;\n")
+        elif base_name == "Expr":
+            f.write("use super::token::{Token, Literal};\n")
+        f.write("use std::fmt::Debug;\n\n#[derive(Clone, Debug)]\npub enum " + base_name + " {\n")
 
         for _type in types:
             type_name = _type.split("|")[0].strip()
@@ -67,5 +71,9 @@ if __name__ == "__main__":
         "Unary | Token, Expr",
         "Binary | Expr, Token, Expr",
         "Grouping | Expr",
-        "Literal | Token"
+        "Literal | Literal"
+    ])
+    define_ast(out_dir, "Stmt", [
+        "ExprStmt | Expr",
+        "Output | Vec<Expr>"
     ])

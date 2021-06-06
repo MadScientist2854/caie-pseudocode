@@ -1,12 +1,12 @@
 use core::panic;
 
-use super::{token::{Literal, TokenType}, expr::Expr};
+use super::{token::{Literal, TokenType}, expr::Expr, stmt::Stmt};
 
-pub trait Interpreter {
-    fn interpret(&self) -> Literal;
+pub trait Interpreter<Return> {
+    fn interpret(&self) -> Return;
 }
 
-impl Interpreter for Expr {
+impl Interpreter<Literal> for Expr {
     fn interpret(&self) -> Literal {
         match self {
             Expr::Unary(op, right) => match op.ttype {
@@ -299,6 +299,21 @@ impl Interpreter for Expr {
             },
             Expr::Grouping(inner) => inner.interpret(),
             Expr::Literal(lit) => lit.clone(),
+        }
+    }
+}
+
+impl Interpreter<()> for Stmt {
+    fn interpret(&self) {
+        match self {
+            Stmt::ExprStmt(expr) => {expr.interpret();},
+            Stmt::Output(exprs) => { for expr in exprs {
+                let val = expr.interpret();
+                if let Literal::String(str_val) = val {
+                    print!("{}", str_val)
+                }
+                else { panic!("expected string literal") }
+            } println!("")},
         }
     }
 }

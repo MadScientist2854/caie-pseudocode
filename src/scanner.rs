@@ -144,6 +144,18 @@ impl Scanner {
                 self.new_token(TokenType::GreaterEqual)
             } else { self.new_token(TokenType::Greater) },
 
+            '"' => {
+                while self.peak() != '"' && self.peak() != '\n' { self.advance(); }
+                let text = self.source.get(self.start+1..self.current).unwrap().to_string();
+                self.advance(); // TODO: unterminated string error
+                self.new_token(TokenType::Literal(Literal::String(text)))
+            },
+            '\'' => {
+                let val = self.advance(); // TODO: unerminated character error
+                self.advance();
+                self.new_token(TokenType::Literal(Literal::Char(val)))
+            },
+
             _ => if c.is_digit(10) {
                 self.scan_digit()
             } else if c.is_alphabetic() {
