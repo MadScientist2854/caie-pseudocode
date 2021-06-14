@@ -1,21 +1,15 @@
-use core::panic;
+use crate::{token::{Literal, TokenType}, expr::Expr, env::Environment};
 
-use super::{token::{Literal, TokenType}, expr::Expr, stmt::Stmt};
-
-pub trait Interpreter<Return> {
-    fn interpret(&self) -> Return;
-}
-
-impl Interpreter<Literal> for Expr {
-    fn interpret(&self) -> Literal {
+impl super::Interpreter<Literal> for Expr {
+    fn interpret(&self, env: &mut Environment) -> Literal {
         match self {
             Expr::Unary(op, right) => match op.ttype {
-                TokenType::NOT => match right.interpret() {
+                TokenType::NOT => match right.interpret(env) {
                     Literal::TRUE => Literal::FALSE,
                     Literal::FALSE => Literal::TRUE,
                     _ => panic!("expected boolean expression")
                 },
-                TokenType::Minus => match right.interpret() {
+                TokenType::Minus => match right.interpret(env) {
                     Literal::Int(val) => Literal::Int(-val),
                     Literal::Float(val) => Literal::Float(-val),
                     _ => panic!("expected boolean expression")
@@ -23,14 +17,14 @@ impl Interpreter<Literal> for Expr {
                 _ => panic!("invalid syntax tree (unary operator)")
             },
             Expr::Binary(left, op, right) => match op.ttype {
-                TokenType::Equal => if left.interpret() == right.interpret() { Literal::TRUE }
+                TokenType::Equal => if left.interpret(env) == right.interpret(env) { Literal::TRUE }
                     else { Literal::FALSE },
-                TokenType::NotEqual => if left.interpret() == right.interpret() { Literal::FALSE }
+                TokenType::NotEqual => if left.interpret(env) == right.interpret(env) { Literal::FALSE }
                 else { Literal::TRUE },
                 // TokenType::Period => todo!(),
                 TokenType::Star => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Char(_) => todo!(),
                         // Literal::String(_) => todo!(),
@@ -55,8 +49,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Slash => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         Literal::Int(left_i) => match right {
                             Literal::Int(right_i) => Literal::Int(left_i / right_i),
@@ -72,8 +66,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Plus => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Date(_, _, _) => todo!(),
                         Literal::Int(left_i) => match right {
@@ -92,8 +86,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Minus => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Date(_, _, _) => todo!(),
                         Literal::Int(left_i) => match right {
@@ -112,8 +106,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Less => {
-                    let left = left.interpret(); //TODO
-                    let right = right.interpret();
+                    let left = left.interpret(env); //TODO
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Char(_) => todo!(), Alphabetical order
                         // Literal::String(_) => todo!(), for char and string
@@ -142,8 +136,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Greater => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Char(_) => todo!(),
                         // Literal::String(_) => todo!(),
@@ -172,8 +166,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::LessEqual => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Char(_) => todo!(), just use normal equal
                         // Literal::String(_) => todo!(), plus Less operation
@@ -202,8 +196,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::GreaterEqual => {
-                    let left = left.interpret();
-                    let right = right.interpret();
+                    let left = left.interpret(env);
+                    let right = right.interpret(env);
                     match left {
                         // Literal::Char(_) => todo!(),
                         // Literal::String(_) => todo!(),
@@ -232,8 +226,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 // TokenType::MOD => { TODO: what do these do anyways? remainder and integer division? are they even operators and not functions?
-                //     let left = left.interpret();
-                //     let right = right.interpret();
+                //     let left = left.interpret(env);
+                //     let right = right.interpret(env);
                 //     match left {
                 //         Literal::Int(left_i) => match right {
                 //             Literal::Int(right_i) => Literal::Int(left_i - right_i),
@@ -249,8 +243,8 @@ impl Interpreter<Literal> for Expr {
                 //     }
                 // },
                 // TokenType::DIV => {
-                //     let left = left.interpret();
-                //     let right = right.interpret();
+                //     let left = left.interpret(env);
+                //     let right = right.interpret(env);
                 //     match left {
                 //         Literal::Int(left_i) => match right {
                 //             Literal::Int(right_i) => Literal::Int(left_i - right_i),
@@ -266,8 +260,8 @@ impl Interpreter<Literal> for Expr {
                 //     }
                 // },
                 TokenType::AND => {
-                    let right = right.interpret();
-                    match left.interpret() {
+                    let right = right.interpret(env);
+                    match left.interpret(env) {
                         Literal::TRUE => match right {
                             Literal::TRUE => Literal::TRUE,
                             Literal::FALSE => Literal::FALSE,
@@ -281,8 +275,8 @@ impl Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::OR => {
-                    let right = right.interpret();
-                    match left.interpret() {
+                    let right = right.interpret(env);
+                    match left.interpret(env) {
                         Literal::TRUE => match right {
                             Literal::TRUE | Literal::FALSE => Literal::TRUE,
                             _ => panic!("expected boolean value")
@@ -297,23 +291,9 @@ impl Interpreter<Literal> for Expr {
                 },
                 _ => todo!()
             },
-            Expr::Grouping(inner) => inner.interpret(),
+            Expr::Grouping(inner) => inner.interpret(env),
+            Expr::IdentExpr(name) => env.get(name.lexeme.clone()).expect("reference to undefined variable").clone(),
             Expr::Literal(lit) => lit.clone(),
-        }
-    }
-}
-
-impl Interpreter<()> for Stmt {
-    fn interpret(&self) {
-        match self {
-            Stmt::ExprStmt(expr) => {expr.interpret();},
-            Stmt::Output(exprs) => { for expr in exprs {
-                let val = expr.interpret();
-                if let Literal::String(str_val) = val {
-                    print!("{}", str_val)
-                }
-                else { panic!("expected string literal") }
-            } println!("")},
         }
     }
 }
