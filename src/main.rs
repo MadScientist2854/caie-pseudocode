@@ -1,4 +1,5 @@
 mod scanner;
+use env::Environment;
 use parser::Parser;
 use scanner::Scanner;
 mod parser;
@@ -8,6 +9,7 @@ mod expr;
 mod stmt;
 mod pprint;
 mod interpreter;
+mod env;
 
 use std::io::{Read, Result};
 use pprint::PPrint;
@@ -39,10 +41,10 @@ fn parse_file(path: String) -> Result<()> {
             //     println!("{}", token);
             // }
             let mut parser = Parser::new(tokens);
-            let stmts = parser.parse();
-            for stmt in stmts {
-                stmt.interpret();
-            }
+            let prog = parser.parse();
+            // println!("{:?}", stmts);
+            let mut env = Environment::new();
+            prog.interpret(&mut env);
         },
         // Err((line, message)) => {println!("{}", message)}
         Err(_) => {}

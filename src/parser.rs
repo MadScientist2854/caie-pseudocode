@@ -1,5 +1,3 @@
-use core::panic;
-
 use super::token::{Token, TokenType};
 use super::expr::Expr;
 use super::stmt::Stmt;
@@ -9,6 +7,7 @@ pub struct Parser {
     current: usize
 }
 
+#[derive(Debug, Clone)]
 pub struct ParseError {
     pub msg: String,
     pub token: Token
@@ -31,9 +30,9 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Vec<Stmt> {
-        match self.program() { // TODO: move this into all statement productions
-            Ok(stmts) => stmts,
+    pub fn parse(&mut self) -> Stmt {
+        match self.program() {
+            Ok(prog) => prog,
             Err(err) => match err.token.ttype {
                 TokenType::End => panic!("error at end: {}", err.msg),
                 _ => panic!("error at token {}: {}", err.token, err.msg)
@@ -58,25 +57,73 @@ impl Parser {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-    fn program(&mut self) -> Result<Vec<Stmt>, ParseError> {
+    fn program(&mut self) -> Result<Stmt, ParseError> {
+        self.block(vec![TokenType::End])
+    }
+    fn block(&mut self, terminators: Vec<TokenType>) -> Result<Stmt, ParseError> {
+        while self.peak().ttype == TokenType::NL { self.advance(); } // get rid of newlines at the start
+
         let mut statements = Vec::new();
-        while !self.is_at_end() { statements.push(self.statement()?) }
-        Ok(statements)
+        'outer: loop {
+            for terminator in terminators.clone() {
+                if self.peak().ttype == terminator { break 'outer }
+            }
+            statements.push(self.statement()?)
+        }
+        self.advance();
+        Ok(Stmt::Block(statements))
     }
     fn statement(&mut self) -> Result<Stmt, ParseError> {
+        let tkn = self.peak();
+        let stmt = match tkn.ttype {
+            TokenType::Identifier => self.assign(tkn),
+            TokenType::OUTPUT => self.output(),
+            TokenType::INPUT => self.input(),
+            TokenType::IF => self.ifthen(),
+            _ => Ok(Stmt::ExprStmt(self.expr()?))
+        };
         match self.peak().ttype {
-            TokenType::OUTPUT => {
-                self.advance();
-                let mut exprs = Vec::new();
-                exprs.push(self.expr()?);
-                while self.peak().ttype == TokenType::Comma {
-                    self.advance();
-                    exprs.push(self.expr()?);
-                }
-                Ok(Stmt::Output(exprs))
-            },
-            _ => Ok(Stmt::ExprStmt(Box::new(self.expr()?)))
+            TokenType::NL | TokenType::End => { self.advance(); stmt },
+            _ => panic!("Expected newline")
         }
+    }
+    fn assign(&mut self, name: Token) -> Result<Stmt, ParseError> {
+        self.advance();
+        if let TokenType::Arrow = self.peak().ttype { self.advance(); }
+        else { panic!("Expected '<-' token") }
+        Ok(Stmt::Assign(name, self.expr()?))
+    }
+    fn input(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        Ok(Stmt::Input(self.expr()?))
+    }
+    fn output(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let mut exprs = Vec::new();
+        exprs.push(self.expr()?);
+        while self.peak().ttype == TokenType::Comma {
+            self.advance();
+            exprs.push(self.expr()?);
+        }
+        Ok(Stmt::Output(exprs))
+    }
+    fn ifthen(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let condition = self.expr()?;
+        if let TokenType::NL = self.peak().ttype { self.advance(); }
+        else { panic!("Expected newline") }
+        if let TokenType::THEN = self.peak().ttype { self.advance(); }
+        else { panic!("'THEN' required after 'IF'") }
+        if let TokenType::NL = self.peak().ttype { self.advance(); }
+        else { panic!("Expected newline") }
+        let then_block = self.block(vec![TokenType::ELSE, TokenType::ENDIF])?;
+        if let TokenType::ELSE = self.previous().ttype {
+            if let TokenType::NL = self.peak().ttype { self.advance(); }
+            else { panic!("Expected newline") }
+            let else_block = self.block(vec![TokenType::ENDIF])?;
+            Ok(Stmt::IfThen(condition, Box::new(then_block), Some(Box::new(else_block))))
+        }
+        else { Ok(Stmt::IfThen(condition, Box::new(then_block), None)) }
     }
 
     pub fn expr(&mut self) -> Result<Expr, ParseError> {
@@ -89,7 +136,6 @@ impl Parser {
                 TokenType::Equal | TokenType::NotEqual => {
                     self.advance();
                     expr = Expr::Binary(Box::new(expr), tkn.clone(), Box::new(self.logic()?));
-                    // println!("{}", expr.prettify())
                 },
                 _ => {break;}
             }
@@ -104,7 +150,6 @@ impl Parser {
                 TokenType::AND | TokenType::OR => {
                     self.advance();
                     expr = Expr::Binary(Box::new(expr), tkn.clone(), Box::new(self.comparison()?));
-                    // println!("{}", expr.prettify())
                 },
                 _ => {break;}
             }
@@ -119,7 +164,6 @@ impl Parser {
                 TokenType::Greater | TokenType::Less | TokenType::GreaterEqual | TokenType::LessEqual => {
                     self.advance();
                     expr = Expr::Binary(Box::new(expr), tkn.clone(), Box::new(self.term()?));
-                    // println!("{}", expr.prettify())
                 },
                 _ => {break;}
             }
@@ -134,7 +178,6 @@ impl Parser {
                 TokenType::Plus | TokenType::Minus => {
                     self.advance();
                     expr = Expr::Binary(Box::new(expr), tkn.clone(), Box::new(self.factor()?));
-                    // println!("{}", expr.prettify())
                 },
                 _ => {break;}
             }
@@ -149,7 +192,6 @@ impl Parser {
                 TokenType::Slash | TokenType::Star | TokenType::MOD | TokenType::DIV => {
                     self.advance();
                     expr = Expr::Binary(Box::new(expr), tkn.clone(), Box::new(self.unary()?));
-                    // println!("{}", expr.prettify())
                 }
                 _ => {break;}
             }
@@ -186,6 +228,7 @@ impl Parser {
             //     }
             //     expr
             // }
+            TokenType::Identifier => { self.advance(); Ok(Expr::IdentExpr(tkn)) },
             TokenType::LeftParen => {
                 self.advance();
                 let expr = Expr::Grouping(Box::new(self.expr()?));

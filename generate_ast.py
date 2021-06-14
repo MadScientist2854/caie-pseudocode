@@ -5,6 +5,7 @@ def define_ast(out_dir, base_name, types):
     with open(path, "w") as f:
         if base_name == "Stmt":
             f.write("use super::expr::Expr;\n")
+            f.write("use super::token::Token;\n")
         elif base_name == "Expr":
             f.write("use super::token::{Token, Literal};\n")
         f.write("use std::fmt::Debug;\n\n#[derive(Clone, Debug)]\npub enum " + base_name + " {\n")
@@ -14,8 +15,8 @@ def define_ast(out_dir, base_name, types):
             f.write("    " + type_name + "(")
             field_list = _type.split("|")[1].strip()
             fields = field_list.split(", ")
-            if fields[0] == "Expr":
-                    fields[0] = "Box<Expr>"
+            if fields[0] == base_name:
+                    fields[0] = "Box<"+ base_name +">"
             f.write(fields[0])
             for field in fields[1:]:
                 f.write(", ")
@@ -71,9 +72,14 @@ if __name__ == "__main__":
         "Unary | Token, Expr",
         "Binary | Expr, Token, Expr",
         "Grouping | Expr",
+        "IdentExpr | Token",
         "Literal | Literal"
     ])
     define_ast(out_dir, "Stmt", [
+        "Block | Vec<Stmt>",
         "ExprStmt | Expr",
-        "Output | Vec<Expr>"
+        "Assign | Token, Expr",
+        "Input | Expr",
+        "Output | Vec<Expr>",
+        "IfThen | Expr, Stmt, Option<Box<Stmt>>",
     ])
