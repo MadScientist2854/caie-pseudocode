@@ -84,14 +84,14 @@ impl Parser {
         };
         match self.peak().ttype {
             TokenType::NL | TokenType::End => { self.advance(); stmt },
-            _ => panic!("Expected newline")
+            _ => Err(ParseError::new(self.peak(), "Expected newline".into()))
         }
     }
     fn assign(&mut self, name: Token) -> Result<Stmt, ParseError> {
         self.advance();
-        if let TokenType::Arrow = self.peak().ttype { self.advance(); }
-        else { panic!("Expected '<-' token") }
-        Ok(Stmt::Assign(name, self.expr()?))
+        if self.peak().ttype == TokenType::Arrow
+        { self.advance(); Ok(Stmt::Assign(name, self.expr()?)) }
+        else { Err(ParseError::new(self.peak(), "Expected '<-' token".into())) }
     }
     fn input(&mut self) -> Result<Stmt, ParseError> {
         self.advance();
@@ -110,16 +110,16 @@ impl Parser {
     fn ifthen(&mut self) -> Result<Stmt, ParseError> {
         self.advance();
         let condition = self.expr()?;
-        if let TokenType::NL = self.peak().ttype { self.advance(); }
-        else { panic!("Expected newline") }
-        if let TokenType::THEN = self.peak().ttype { self.advance(); }
-        else { panic!("'THEN' required after 'IF'") }
-        if let TokenType::NL = self.peak().ttype { self.advance(); }
-        else { panic!("Expected newline") }
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+        if self.peak().ttype == TokenType::THEN { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "'THEN' required after 'IF'".into())) }
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
         let then_block = self.block(vec![TokenType::ELSE, TokenType::ENDIF])?;
         if let TokenType::ELSE = self.previous().ttype {
-            if let TokenType::NL = self.peak().ttype { self.advance(); }
-            else { panic!("Expected newline") }
+            if self.peak().ttype == TokenType::NL { self.advance(); }
+            else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
             let else_block = self.block(vec![TokenType::ENDIF])?;
             Ok(Stmt::IfThen(condition, Box::new(then_block), Some(Box::new(else_block))))
         }
