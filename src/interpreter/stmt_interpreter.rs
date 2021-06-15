@@ -1,4 +1,4 @@
-use crate::{stmt::Stmt, env::Environment, token::Literal, expr::Expr};
+use crate::{stmt::Stmt, env::{Environment, Decl, Type}, token::Literal, expr::Expr};
 
 impl super::Interpreter<()> for Stmt {
     fn interpret(&self, env: &mut Environment) {
@@ -7,7 +7,16 @@ impl super::Interpreter<()> for Stmt {
                 stmt.interpret(env);
             },
             Stmt::ExprStmt(expr) => {expr.interpret(env);},
-            Stmt::Assign(name, val) => { let val = val.interpret(env); env.assign(name.lexeme.clone(), val)},
+            Stmt::Declare(name, dtype) => env.declare(name.lexeme.clone(), Decl::new(true, dtype.clone())),
+            Stmt::Constant(name, val) => {
+                let val = val.interpret(env);
+                env.declare(name.lexeme.clone(), Decl::new(false, Type::from_literal(&val)));
+                env.assign(name.lexeme.clone(), val)
+            },
+            Stmt::Assign(name, val) => {
+                let val = val.interpret(env);
+                env.assign(name.lexeme.clone(), val)
+            },
             Stmt::Input(expr) => if let Expr::IdentExpr(name) = expr.clone() {
                 let mut val = String::new();
                 std::io::stdin().read_line(&mut val).unwrap();

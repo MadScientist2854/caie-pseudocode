@@ -1,25 +1,11 @@
 use super::token::{Token, TokenType};
 use super::expr::Expr;
 use super::stmt::Stmt;
+use super::env::Type;
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize
-}
-
-#[derive(Debug, Clone)]
-pub struct ParseError {
-    pub msg: String,
-    pub token: Token
-}
-
-impl ParseError {
-    pub fn new(token: Token, msg: String) -> Self {
-        Self {
-            token,
-            msg
-        }
-    }
 }
 
 impl Parser {
@@ -76,6 +62,8 @@ impl Parser {
     fn statement(&mut self) -> Result<Stmt, ParseError> {
         let tkn = self.peak();
         let stmt = match tkn.ttype {
+            TokenType::DECLARE => self.declare(),
+            TokenType::CONSTANT => self.constant(),
             TokenType::Identifier => self.assign(tkn),
             TokenType::OUTPUT => self.output(),
             TokenType::INPUT => self.input(),
@@ -86,6 +74,24 @@ impl Parser {
             TokenType::NL | TokenType::End => { self.advance(); stmt },
             _ => Err(ParseError::new(self.peak(), "Expected newline".into()))
         }
+    }
+    fn declare(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let name  = self.peak();
+        if name.ttype == TokenType::Identifier
+        { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected identifier".into())) }
+        if self.peak().ttype == TokenType::Colon { self.advance(); Ok(Stmt::Declare(name, self.dtype()?)) }
+        else { Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
+    }
+    fn constant(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let name  = self.peak();
+        if name.ttype == TokenType::Identifier
+        { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected identifier".into())) }
+        if self.peak().ttype == TokenType::Equal { self.advance(); Ok(Stmt::Constant(name, self.expr()?)) }
+        else { Err(ParseError::new(self.peak(), "Expected '=' token".into())) }
     }
     fn assign(&mut self, name: Token) -> Result<Stmt, ParseError> {
         self.advance();
@@ -238,6 +244,37 @@ impl Parser {
             },
             TokenType::End => Err(ParseError::new(tkn, "Expected expression".to_string())),
             _ => Err(ParseError::new(tkn, "Invalid expression-starting token".to_string()))
+        }
+    }
+
+    fn dtype(&mut self) -> Result<Type, ParseError> {
+        let dtype = match self.peak().ttype {
+            TokenType::BOOLEAN => Ok(Type::Bool),
+            TokenType::INTEGER => Ok(Type::Int),
+            TokenType::REAL => Ok(Type::Float),
+            TokenType::CHAR => Ok(Type::Char),
+            TokenType::STRING => Ok(Type::String),
+            TokenType::DATE => Ok(Type::Date),
+            // TokenType::Identifier => Ok(Type::UDT), TODO
+            // TokenType::ARRAY => Ok(Type::Array(Type, size)),
+            _ => Err(ParseError::new(self.peak(), "Expected type".into()))
+        };
+        self.advance();
+        dtype
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseError {
+    pub msg: String,
+    pub token: Token
+}
+
+impl ParseError {
+    pub fn new(token: Token, msg: String) -> Self {
+        Self {
+            token,
+            msg
         }
     }
 }

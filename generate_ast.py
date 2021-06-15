@@ -6,6 +6,7 @@ def define_ast(out_dir, base_name, types):
         if base_name == "Stmt":
             f.write("use super::expr::Expr;\n")
             f.write("use super::token::Token;\n")
+            f.write("use super::env::Type;\n")
         elif base_name == "Expr":
             f.write("use super::token::{Token, Literal};\n")
         f.write("use std::fmt::Debug;\n\n#[derive(Clone, Debug)]\npub enum " + base_name + " {\n")
@@ -78,6 +79,8 @@ if __name__ == "__main__":
     define_ast(out_dir, "Stmt", [
         "Block | Vec<Stmt>",
         "ExprStmt | Expr",
+        "Declare | Token, Type",
+        "Constant | Token, Expr",
         "Assign | Token, Expr",
         "Input | Expr",
         "Output | Vec<Expr>",

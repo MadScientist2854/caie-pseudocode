@@ -1,5 +1,4 @@
 OUTPUT "What's your name?"
-
 INPUT Name
 
 IF Name = "Zaryab"
