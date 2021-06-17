@@ -1,4 +1,5 @@
 use super::token::{Token, Literal};
+use super::env::Type;
 use std::fmt::Debug;
 
 #[derive(Clone, Debug)]

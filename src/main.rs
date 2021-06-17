@@ -12,9 +12,7 @@ mod interpreter;
 mod env;
 
 use std::io::{Read, Result};
-use pprint::PPrint;
 use interpreter::Interpreter;
-use token::Literal;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();

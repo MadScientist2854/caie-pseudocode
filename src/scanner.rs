@@ -1,5 +1,6 @@
 use super::token::{Token, TokenType, Literal};
 use std::{collections::HashMap, str::FromStr};
+use super::env::Type;
 
 pub struct Scanner {
     source: String,
@@ -20,12 +21,12 @@ impl Scanner {
             line: 1,
             keywords: {
                 let mut map = HashMap::new();
-                map.insert("INTEGER".to_string(), TokenType::INTEGER);
-                map.insert("BOOLEAN".to_string(), TokenType::BOOLEAN);
-                map.insert("REAL".to_string(), TokenType::REAL);
-                map.insert("CHAR".to_string(), TokenType::CHAR);
-                map.insert("STRING".to_string(), TokenType::STRING);
-                map.insert("DATE".to_string(), TokenType::DATE);
+                map.insert("INTEGER".to_string(), TokenType::Literal(Literal::Type(Type::Int)));
+                map.insert("BOOLEAN".to_string(), TokenType::Literal(Literal::Type(Type::Bool)));
+                map.insert("REAL".to_string(), TokenType::Literal(Literal::Type(Type::Float)));
+                map.insert("CHAR".to_string(), TokenType::Literal(Literal::Type(Type::Char)));
+                map.insert("STRING".to_string(), TokenType::Literal(Literal::Type(Type::String)));
+                map.insert("DATE".to_string(), TokenType::Literal(Literal::Type(Type::Date)));
                 map.insert("ARRAY".to_string(), TokenType::ARRAY);
                 map.insert("DECLARE".to_string(), TokenType::DECLARE);
                 map.insert("CONSTANT".to_string(), TokenType::CONSTANT);
@@ -60,6 +61,7 @@ impl Scanner {
                 map.insert("REPEAT".to_string(), TokenType::REPEAT);
                 map.insert("UNTIL".to_string(), TokenType::UNTIL);
                 map.insert("WHILE".to_string(), TokenType::WHILE);
+                map.insert("DO".to_string(), TokenType::DO);
                 map.insert("ENDWHILE".to_string(), TokenType::ENDWHILE);
                 map.insert("TYPE".to_string(), TokenType::TYPE);
                 map.insert("ENDTYPE".to_string(), TokenType::ENDTYPE);

@@ -1,4 +1,4 @@
-use super::token::{Token, TokenType};
+use super::token::{Token, TokenType, Literal};
 use super::expr::Expr;
 use super::stmt::Stmt;
 use super::env::Type;
@@ -64,10 +64,15 @@ impl Parser {
         let stmt = match tkn.ttype {
             TokenType::DECLARE => self.declare(),
             TokenType::CONSTANT => self.constant(),
-            TokenType::Identifier => self.assign(tkn),
+            TokenType::Identifier => self.assign(),
             TokenType::OUTPUT => self.output(),
             TokenType::INPUT => self.input(),
+            TokenType::PROCEDURE => self.procedure(),
+            TokenType::FOR => self.forto(),
             TokenType::IF => self.ifthen(),
+            TokenType::CASE => self.case(),
+            TokenType::REPEAT => self.repeat(),
+            TokenType::WHILE => self.whiledo(),
             _ => Ok(Stmt::ExprStmt(self.expr()?))
         };
         match self.peak().ttype {
@@ -81,20 +86,19 @@ impl Parser {
         if name.ttype == TokenType::Identifier
         { self.advance(); }
         else { return Err(ParseError::new(self.peak(), "Expected identifier".into())) }
-        if self.peak().ttype == TokenType::Colon { self.advance(); Ok(Stmt::Declare(name, self.dtype()?)) }
+        if self.peak().ttype == TokenType::Colon { self.advance(); Ok(Stmt::Declare(name, self.expr()?)) }
         else { Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
     }
     fn constant(&mut self) -> Result<Stmt, ParseError> {
         self.advance();
         let name  = self.peak();
-        if name.ttype == TokenType::Identifier
-        { self.advance(); }
+        if name.ttype == TokenType::Identifier { self.advance(); }
         else { return Err(ParseError::new(self.peak(), "Expected identifier".into())) }
         if self.peak().ttype == TokenType::Equal { self.advance(); Ok(Stmt::Constant(name, self.expr()?)) }
         else { Err(ParseError::new(self.peak(), "Expected '=' token".into())) }
     }
-    fn assign(&mut self, name: Token) -> Result<Stmt, ParseError> {
-        self.advance();
+    fn assign(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.expr()?;
         if self.peak().ttype == TokenType::Arrow
         { self.advance(); Ok(Stmt::Assign(name, self.expr()?)) }
         else { Err(ParseError::new(self.peak(), "Expected '<-' token".into())) }
@@ -113,6 +117,57 @@ impl Parser {
         }
         Ok(Stmt::Output(exprs))
     }
+    fn procedure(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let name = self.advance();
+        if name.ttype != TokenType::Identifier {
+            panic!("expected identifier")
+        }
+        if self.peak().ttype == TokenType::LeftParen { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected '(' token".into())) }
+
+        let mut args = Vec::new();
+        while self.peak().ttype == TokenType::Identifier {
+            let name = self.advance();
+            if self.peak().ttype == TokenType::Colon { self.advance(); }
+            else { return Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
+            let dtype = self.expr()?;
+            args.push((name, dtype));
+
+            if self.peak().ttype != TokenType::Comma { break }
+        }
+
+        if self.peak().ttype == TokenType::RightParen { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected ')' token".into())) }
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+
+        let block = self.block(vec![TokenType::ENDPROCEDURE])?;
+        Ok(Stmt::Procedure(name, args, Box::new(block)))
+    }
+    fn forto(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let name  = self.peak();
+        if name.ttype == TokenType::Identifier { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected identifier".into())) }
+        
+        let val1: Expr;
+        if self.peak().ttype == TokenType::Arrow
+        { self.advance(); val1 = self.expr()? }
+        else { return Err(ParseError::new(self.peak(), "Expected '<-' token".into())) }
+        if self.peak().ttype == TokenType::TO { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected `TO` token".into())) }
+        let val2 = self.expr()?;
+        let mut step = None;
+        if let TokenType::STEP = self.peak().ttype { self.advance(); step = Some(self.expr()?) }
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+        let block = self.block(vec![TokenType::ENDFOR])?;
+
+        if self.peak().ttype == TokenType::Identifier { self.advance(); }
+
+        Ok(Stmt::ForTo(name, val1, val2, step, Box::new(block)))
+    }
     fn ifthen(&mut self) -> Result<Stmt, ParseError> {
         self.advance();
         let condition = self.expr()?;
@@ -130,6 +185,50 @@ impl Parser {
             Ok(Stmt::IfThen(condition, Box::new(then_block), Some(Box::new(else_block))))
         }
         else { Ok(Stmt::IfThen(condition, Box::new(then_block), None)) }
+    }
+    fn case(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        if self.peak().ttype == TokenType::OF { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "'OF' required after 'CASE'".into())) }
+        let val = self.expr()?;
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+        let mut cases: Vec<(Expr, Stmt)> = Vec::new();
+        while self.peak().ttype != TokenType::ENDCASE {
+            if let TokenType::OTHERWISE = self.peak().ttype {
+                self.advance();
+                if self.peak().ttype == TokenType::Colon { self.advance(); }
+                else { return Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
+                let ret = Ok(Stmt::Case(val, cases, Some(Box::new(self.statement()?))));
+                if self.peak().ttype == TokenType::ENDCASE { self.advance(); return ret }
+                else { return Err(ParseError::new(self.peak(), "Expected 'ENDWHILE' token".into())) }
+            }
+            let case = self.expr()?;
+            if self.peak().ttype == TokenType::Colon { self.advance(); }
+            else { return Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
+            let stmt = self.statement()?;
+            cases.push((case, stmt));
+        }
+        self.advance();
+        Ok(Stmt::Case(val, cases, None))
+    }
+    fn repeat(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+        let block = self.block(vec![TokenType::UNTIL])?;
+        let condition = self.expr()?;
+        Ok(Stmt::Repeat(condition, Box::new(block)))
+    }
+    fn whiledo(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let condition = self.expr()?;
+        if self.peak().ttype == TokenType::DO { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "'DO' required after 'WHILE'".into())) }
+        if self.peak().ttype == TokenType::NL { self.advance(); }
+        else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
+        let block = self.block(vec![TokenType::ENDWHILE])?;
+        Ok(Stmt::WhileDo(condition, Box::new(block)))
     }
 
     pub fn expr(&mut self) -> Result<Expr, ParseError> {
@@ -247,14 +346,8 @@ impl Parser {
         }
     }
 
-    fn dtype(&mut self) -> Result<Type, ParseError> {
+    fn dtype(&mut self) -> Result<Expr, ParseError> {
         let dtype = match self.peak().ttype {
-            TokenType::BOOLEAN => Ok(Type::Bool),
-            TokenType::INTEGER => Ok(Type::Int),
-            TokenType::REAL => Ok(Type::Float),
-            TokenType::CHAR => Ok(Type::Char),
-            TokenType::STRING => Ok(Type::String),
-            TokenType::DATE => Ok(Type::Date),
             // TokenType::Identifier => Ok(Type::UDT), TODO
             // TokenType::ARRAY => Ok(Type::Array(Type, size)),
             _ => Err(ParseError::new(self.peak(), "Expected type".into()))

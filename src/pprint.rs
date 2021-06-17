@@ -11,7 +11,7 @@ impl PPrint for Expr {
             Expr::Binary(left, operator, right) => format!("( {} {} {} )", operator.lexeme, (**left).prettify(), (**right).prettify()),
             Expr::Grouping(inner) => format!("( {} )", (**inner).prettify()),
             Expr::IdentExpr(name) => name.lexeme.clone(),
-            Expr::Literal(value) => value.clone().to_string()
+            Expr::Literal(value) => value.clone().to_string(),
         }
     }
 }

@@ -6,9 +6,9 @@ def define_ast(out_dir, base_name, types):
         if base_name == "Stmt":
             f.write("use super::expr::Expr;\n")
             f.write("use super::token::Token;\n")
-            f.write("use super::env::Type;\n")
         elif base_name == "Expr":
             f.write("use super::token::{Token, Literal};\n")
+        f.write("use super::env::Type;\n")
         f.write("use std::fmt::Debug;\n\n#[derive(Clone, Debug)]\npub enum " + base_name + " {\n")
 
         for _type in types:
@@ -74,15 +74,22 @@ if __name__ == "__main__":
         "Binary | Expr, Token, Expr",
         "Grouping | Expr",
         "IdentExpr | Token",
+        # "ArrayExpr | Type, size, ",
         "Literal | Literal"
     ])
     define_ast(out_dir, "Stmt", [
         "Block | Vec<Stmt>",
         "ExprStmt | Expr",
-        "Declare | Token, Type",
+        "Declare | Token, Expr",
         "Constant | Token, Expr",
-        "Assign | Token, Expr",
+        "Assign | Expr, Expr",
+        "ProcCall | Expr, Vec<Expr>",
         "Input | Expr",
         "Output | Vec<Expr>",
+        "Procedure | Token, Vec<(Token, Expr)>, Stmt",
+        "ForTo | Token, Expr, Expr, Option<Expr>, Stmt",
         "IfThen | Expr, Stmt, Option<Box<Stmt>>",
+        "Case | Expr, Vec<(Expr, Stmt)>, Option<Box<Stmt>>",
+        "Repeat | Expr, Stmt",
+        "WhileDo | Expr, Stmt",
     ])

@@ -1,9 +1,11 @@
-OUTPUT "What's your name?"
-INPUT Name
-
-IF Name = "Zaryab"
-  THEN
-    OUTPUT "Salve, domine!"
-  ELSE
-    OUTPUT "Hello, ", Name
-ENDIF
+FOR I <- 1 TO 10 STEP 5
+  REPEAT
+    OUTPUT "What's your name?"
+    INPUT Name
+    CASE OF Name
+        "Zaryab" : OUTPUT "Salve, domine!"
+        "Mad" : OUTPUT "OH GOD NO"
+        OTHERWISE : OUTPUT "Hello, ", Name
+      ENDCASE
+  UNTIL Name <> "Mad"
+ENDFOR

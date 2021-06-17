@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use super::env::Type;
 
 #[derive(Clone, Debug)]
 pub struct Token {
@@ -76,6 +77,7 @@ pub enum TokenType {
     REPEAT,
     UNTIL,
     WHILE,
+    DO,
     ENDWHILE,
     TYPE,
     ENDTYPE,
@@ -111,7 +113,9 @@ pub enum Literal {
     Float(f32),
     Char(char), //''
     String(String), //""
-    Date(i8, i8, i16) // dd/mm/yyyy
+    Date(i8, i8, i16), // dd/mm/yyyy
+
+    Type(Type)
 }
 
 impl Literal {
@@ -128,6 +132,7 @@ impl Literal {
             Literal::Char(val) => format!("'{}'", val),
             Literal::String(val) => format!("\"{}\"", val),
             Literal::Date(d, m, y) => format!("{}/{}/{}", d, m, y),
+            Literal::Type(inner) => format!("{:?}", inner),
         }
     }
 }

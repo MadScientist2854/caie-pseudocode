@@ -292,7 +292,7 @@ impl super::Interpreter<Literal> for Expr {
                 _ => todo!()
             },
             Expr::Grouping(inner) => inner.interpret(env),
-            Expr::IdentExpr(name) => env.get(name.lexeme.clone()).expect("reference to undefined variable").clone(),
+            Expr::IdentExpr(name) => env.get(&name.lexeme).expect("reference to undefined variable").clone(),
             Expr::Literal(lit) => lit.clone(),
         }
     }
