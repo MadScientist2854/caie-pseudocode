@@ -1,7 +1,6 @@
-use super::token::{Token, TokenType, Literal};
+use super::token::{Token, TokenType};
 use super::expr::Expr;
 use super::stmt::Stmt;
-use super::env::Type;
 
 pub struct Parser {
     tokens: Vec<Token>,

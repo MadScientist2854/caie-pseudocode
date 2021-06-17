@@ -1,6 +1,5 @@
 use super::expr::Expr;
 use super::token::Token;
-use super::env::Type;
 use std::fmt::Debug;
 
 #[derive(Clone, Debug)]

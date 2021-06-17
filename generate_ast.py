@@ -8,7 +8,6 @@ def define_ast(out_dir, base_name, types):
             f.write("use super::token::Token;\n")
         elif base_name == "Expr":
             f.write("use super::token::{Token, Literal};\n")
-        f.write("use super::env::Type;\n")
         f.write("use std::fmt::Debug;\n\n#[derive(Clone, Debug)]\npub enum " + base_name + " {\n")
 
         for _type in types:
