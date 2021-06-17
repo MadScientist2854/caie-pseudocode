@@ -32,7 +32,7 @@ impl super::Interpreter<()> for Stmt {
             Stmt::Input(expr) => if let Expr::IdentExpr(name) = expr.clone() {
                 let mut val = String::new();
                 std::io::stdin().read_line(&mut val).unwrap();
-                env.assign(name.lexeme.clone(), Literal::String(val[0..val.len()-1].to_string())); // Cut off newline
+                env.assign(name.lexeme.clone(), Literal::String(val.trim().to_string())); // Cut off newline
             } else { panic!("expected identifier") },
             Stmt::Output(exprs) => { for expr in exprs {
                 let val = expr.interpret(env);
