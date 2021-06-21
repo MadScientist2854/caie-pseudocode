@@ -28,7 +28,13 @@ impl super::Interpreter<()> for Stmt {
                 };
                 env.assign(name, val);
             },
-            Stmt::ProcCall(_, _) => todo!(),
+            Stmt::ProcCall(name, args) => {
+                let mut arg_list = Vec::new();
+                for arg in args {
+                    arg_list.push(arg.interpret(env));
+                }
+                env.call_proc(&name.lexeme, arg_list);
+            },
             Stmt::Input(expr) => if let Expr::IdentExpr(name) = expr.clone() {
                 let mut val = String::new();
                 std::io::stdin().read_line(&mut val).unwrap();
@@ -67,8 +73,8 @@ impl super::Interpreter<()> for Stmt {
                 }
                 loop {
                     block.interpret(env);
-                    let prev = if let &Literal::Int(val) =
-                        env.get(&name.lexeme).unwrap() { val }
+                    let prev = if let Literal::Int(val) =
+                        env.get_stack(&name.lexeme) { val }
                     else { panic!("expected integer expression") };
                     let next = prev + step;
                     if next > val2 { break }

@@ -9,7 +9,7 @@ pub enum Stmt {
     Declare(Token, Expr),
     Constant(Token, Expr),
     Assign(Expr, Expr),
-    ProcCall(Expr, Vec<Expr>),
+    ProcCall(Token, Vec<Expr>),
     Input(Expr),
     Output(Vec<Expr>),
     Procedure(Token, Vec<(Token, Expr)>, Box<Stmt>),

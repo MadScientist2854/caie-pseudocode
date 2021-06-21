@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "Declare | Token, Expr",
         "Constant | Token, Expr",
         "Assign | Expr, Expr",
-        "ProcCall | Expr, Vec<Expr>",
+        "ProcCall | Token, Vec<Expr>",
         "Input | Expr",
         "Output | Vec<Expr>",
         "Procedure | Token, Vec<(Token, Expr)>, Stmt",

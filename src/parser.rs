@@ -1,3 +1,5 @@
+use std::thread::panicking;
+
 use super::token::{Token, TokenType};
 use super::expr::Expr;
 use super::stmt::Stmt;
@@ -64,6 +66,7 @@ impl Parser {
             TokenType::DECLARE => self.declare(),
             TokenType::CONSTANT => self.constant(),
             TokenType::Identifier => self.assign(),
+            TokenType::CALL => self.proccall(),
             TokenType::OUTPUT => self.output(),
             TokenType::INPUT => self.input(),
             TokenType::PROCEDURE => self.procedure(),
@@ -102,6 +105,26 @@ impl Parser {
         { self.advance(); Ok(Stmt::Assign(name, self.expr()?)) }
         else { Err(ParseError::new(self.peak(), "Expected '<-' token".into())) }
     }
+    fn proccall(&mut self) -> Result<Stmt, ParseError> {
+        self.advance();
+        let name = if self.peak().ttype == TokenType::Identifier { self.advance() }
+        else { panic!("expected identifier") };
+
+        let mut arg_list = vec![];
+        if self.peak().ttype == TokenType::LeftParen {
+            self.advance();
+            arg_list.push(self.expr()?);
+            while self.peak().ttype == TokenType::Comma {
+                self.advance();
+                if self.peak().ttype == TokenType::RightParen { break }
+                arg_list.push(self.expr()?);
+            }
+            if self.peak().ttype == TokenType::RightParen { self.advance(); }
+            else { return Err(ParseError::new(self.peak(), "Expected ')' token".into())) }
+        }
+        
+        Ok(Stmt::ProcCall(name, arg_list))
+    }
     fn input(&mut self) -> Result<Stmt, ParseError> {
         self.advance();
         Ok(Stmt::Input(self.expr()?))
@@ -122,22 +145,23 @@ impl Parser {
         if name.ttype != TokenType::Identifier {
             panic!("expected identifier")
         }
-        if self.peak().ttype == TokenType::LeftParen { self.advance(); }
-        else { return Err(ParseError::new(self.peak(), "Expected '(' token".into())) }
 
-        let mut args = Vec::new();
-        while self.peak().ttype == TokenType::Identifier {
-            let name = self.advance();
-            if self.peak().ttype == TokenType::Colon { self.advance(); }
-            else { return Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
-            let dtype = self.expr()?;
-            args.push((name, dtype));
-
-            if self.peak().ttype != TokenType::Comma { break }
+        let mut args = vec![];
+        if self.peak().ttype == TokenType::LeftParen {
+            self.advance();
+            while self.peak().ttype == TokenType::Identifier {
+                let name = self.advance();
+                if self.peak().ttype == TokenType::Colon { self.advance(); }
+                else { return Err(ParseError::new(self.peak(), "Expected ':' token".into())) }
+                let dtype = self.expr()?;
+                args.push((name, dtype));
+    
+                if self.peak().ttype != TokenType::Comma { break }
+            }
+            if self.peak().ttype == TokenType::RightParen { self.advance(); }
+            else { return Err(ParseError::new(self.peak(), "Expected ')' token".into())) }
         }
 
-        if self.peak().ttype == TokenType::RightParen { self.advance(); }
-        else { return Err(ParseError::new(self.peak(), "Expected ')' token".into())) }
         if self.peak().ttype == TokenType::NL { self.advance(); }
         else { return Err(ParseError::new(self.peak(), "Expected newline".into())) }
 

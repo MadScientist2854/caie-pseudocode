@@ -41,7 +41,7 @@ fn parse_file(path: String) -> Result<()> {
             let mut parser = Parser::new(tokens);
             let prog = parser.parse();
             // println!("{:?}", stmts);
-            let mut env = Environment::new();
+            let mut env = Environment::new(None);
             prog.interpret(&mut env);
         },
         // Err((line, message)) => {println!("{}", message)}

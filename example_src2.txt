@@ -1,11 +1,15 @@
-FOR I <- 1 TO 10 STEP 5
-  REPEAT
-    OUTPUT "What's your name?"
-    INPUT Name
-    CASE OF Name
-        "Zaryab" : OUTPUT "Salve, domine!"
-        "Mad" : OUTPUT "OH GOD NO"
-        OTHERWISE : OUTPUT "Hello, ", Name
+PROCEDURE Proc(MasterName: STRING)
+  FOR I <- 1 TO 10 STEP 5
+    REPEAT
+      OUTPUT "What's your name?"
+      INPUT Name
+      CASE OF Name
+          MasterName : OUTPUT "Salve, domine!"
+          "Mad" : OUTPUT "OH GOD NO"
+          OTHERWISE : OUTPUT "Hello, ", Name
       ENDCASE
-  UNTIL Name <> "Mad"
-ENDFOR
+    UNTIL Name <> "Mad"
+  ENDFOR
+ENDPROCEDURE
+
+CALL Proc("Mad")
