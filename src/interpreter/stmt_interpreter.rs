@@ -10,7 +10,6 @@ impl super::Interpreter<()> for Stmt {
             Stmt::Declare(name, dtype) => {
                 let dtype = match dtype.interpret(env) {
                     Literal::Type(inner) => inner,
-                    // Expr::IdentExpr(tkn) => env.types
                     _ => panic!("expected type")
                 };
                 env.declare(name.lexeme.clone(), Decl::new(true, dtype.clone()));
@@ -48,22 +47,41 @@ impl super::Interpreter<()> for Stmt {
                     _ => print!("{}", val.to_string())
                 }
             } println!("")}, // print newline at the end
+            Stmt::Ret(val) => {
+                let val = val.interpret(env);
+                env.set_ret(val);
+            },
             Stmt::Procedure(name, args, block) => {
                 let mut arg_list = Vec::new();
                 for arg in args {
                     arg_list.push((arg.0.lexeme.clone(), match arg.1.interpret(env) {
                         Literal::Type(val) => val,
                         _ => panic!("expected type")
-                    }))
+                    }, arg.2))
                 }
                 env.def_proc(&name.lexeme, arg_list, *block.clone())
+            },
+            Stmt::Function(name, args, ret_type, block) => {
+                let mut arg_list = Vec::new();
+                for arg in args {
+                    arg_list.push((arg.0.lexeme.clone(), match arg.1.interpret(env) {
+                        Literal::Type(val) => val,
+                        _ => panic!("expected type")
+                    }, arg.2))
+                }
+                let ret_type = match ret_type.interpret(env) {
+                    Literal::Type(inner) => inner,
+                    _ => panic!("expected type")
+                };
+                env.def_func(&name.lexeme, arg_list, ret_type, *block.clone())
             },
             Stmt::ForTo(name, val1, val2, step_opt, block) => {
                 let val1 = val1.interpret(env);
                 let val2 = if let Literal::Int(val) = val2.interpret(env) { val }
                 else { panic!("expected integer expression") };
-                let decl_restore = env.declare(name.lexeme.clone(), Decl::new(true, Type::Int));
-                let val_restore = env.assign(name.lexeme.clone(), val1);
+                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
+                inner_env.declare(name.lexeme.clone(), Decl::new(true, Type::Int));
+                inner_env.assign(name.lexeme.clone(), val1);
                 let mut step = 1;
                 if let Some(val) = step_opt {
                     step = match val.interpret(env) {
@@ -81,13 +99,13 @@ impl super::Interpreter<()> for Stmt {
                     env.assign(name.lexeme.clone(), Literal::Int(next));
                 }
 
-                env.del(&name.lexeme);
-                if let Some(decl) = decl_restore {
-                    if let Some(val) = val_restore {
-                        env.declare(name.lexeme.clone(), decl);
-                        env.assign(name.lexeme.clone(), val);
-                    }
-                }
+                // env.del(&name.lexeme);
+                // if let Some(decl) = decl_restore {
+                //     env.declare(name.lexeme.clone(), decl);
+                //     if let Some(val) = val_restore {
+                //         env.assign(name.lexeme.clone(), val);
+                //     }
+                // }
             },
             Stmt::IfThen(cond, then_block, else_block) => {
                 match cond.interpret(env) {

@@ -293,6 +293,13 @@ impl super::Interpreter<Literal> for Expr {
             },
             Expr::Grouping(inner) => inner.interpret(env),
             Expr::IdentExpr(name) => env.get_stack(&name.lexeme),
+            Expr::FnCall(name, args) => {
+                let mut arg_list = Vec::new();
+                for arg in args {
+                    arg_list.push(arg.interpret(env));
+                }
+                env.call_func(&name.lexeme, arg_list)
+            },
             Expr::Literal(lit) => lit.clone(),
         }
     }

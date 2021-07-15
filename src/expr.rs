@@ -7,5 +7,6 @@ pub enum Expr {
     Binary(Box<Expr>, Token, Box<Expr>),
     Grouping(Box<Expr>),
     IdentExpr(Token),
+    FnCall(Token, Vec<Expr>),
     Literal(Literal),
 }

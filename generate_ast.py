@@ -16,7 +16,7 @@ def define_ast(out_dir, base_name, types):
             field_list = _type.split("|")[1].strip()
             fields = field_list.split(", ")
             if fields[0] == base_name:
-                    fields[0] = "Box<"+ base_name +">"
+                fields[0] = "Box<"+ base_name +">"
             f.write(fields[0])
             for field in fields[1:]:
                 f.write(", ")
@@ -73,6 +73,7 @@ if __name__ == "__main__":
         "Binary | Expr, Token, Expr",
         "Grouping | Expr",
         "IdentExpr | Token",
+        "FnCall | Token, Vec<Expr>",
         # "ArrayExpr | Type, size, ",
         "Literal | Literal"
     ])
@@ -85,7 +86,9 @@ if __name__ == "__main__":
         "ProcCall | Token, Vec<Expr>",
         "Input | Expr",
         "Output | Vec<Expr>",
-        "Procedure | Token, Vec<(Token, Expr)>, Stmt",
+        "Ret | Expr",
+        "Procedure | Token, Vec<(Token, Expr, bool)>, Stmt",
+        "Function | Token, Vec<(Token, Expr, bool)>, Expr, Stmt",
         "ForTo | Token, Expr, Expr, Option<Expr>, Stmt",
         "IfThen | Expr, Stmt, Option<Box<Stmt>>",
         "Case | Expr, Vec<(Expr, Stmt)>, Option<Box<Stmt>>",

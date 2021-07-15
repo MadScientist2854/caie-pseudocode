@@ -20,7 +20,7 @@ impl Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {}", self.ttype, self.lexeme)
+        write!(f, "{:?} line {}", self.ttype, self.line)
     }
 }
 
@@ -115,7 +115,8 @@ pub enum Literal {
     String(String), //""
     Date(i8, i8, i16), // dd/mm/yyyy
 
-    Type(Type)
+    Type(Type),
+    Ref(Box<Literal>, String)
 }
 
 impl Literal {
@@ -133,6 +134,7 @@ impl Literal {
             Literal::String(val) => format!("\"{}\"", val),
             Literal::Date(d, m, y) => format!("{}/{}/{}", d, m, y),
             Literal::Type(inner) => format!("{:?}", inner),
+            Literal::Ref(val, _) => format!("&{}", val.to_string()),
         }
     }
 }
