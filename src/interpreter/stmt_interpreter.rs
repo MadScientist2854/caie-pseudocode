@@ -78,34 +78,30 @@ impl super::Interpreter<()> for Stmt {
             Stmt::ForTo(name, val1, val2, step_opt, block) => {
                 let val1 = val1.interpret(env);
                 let val2 = if let Literal::Int(val) = val2.interpret(env) { val }
-                else { panic!("expected integer expression") };
-                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
-                inner_env.declare(name.lexeme.clone(), Decl::new(true, Type::Int));
-                inner_env.assign(name.lexeme.clone(), val1);
+                else { panic!("expected integer expression1") };
                 let mut step = 1;
                 if let Some(val) = step_opt {
                     step = match val.interpret(env) {
                         Literal::Int(val) => val,
-                        _ => panic!("expected integer expression")
+                        _ => panic!("expected integer expression2")
                     }
                 }
+
+                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
+                inner_env.declare(name.lexeme.clone(), Decl::new(true, Type::Int));
+                inner_env.assign(name.lexeme.clone(), val1);
+                
                 loop {
-                    block.interpret(env);
+                    block.interpret(&mut inner_env);
                     let prev = if let Literal::Int(val) =
-                        env.get_stack(&name.lexeme) { val }
-                    else { panic!("expected integer expression") };
+                        inner_env.get_stack(&name.lexeme) { val }
+                    else { panic!("expected integer expression3") };
                     let next = prev + step;
                     if next > val2 { break }
-                    env.assign(name.lexeme.clone(), Literal::Int(next));
+                    inner_env.assign(name.lexeme.clone(), Literal::Int(next));
                 }
 
-                // env.del(&name.lexeme);
-                // if let Some(decl) = decl_restore {
-                //     env.declare(name.lexeme.clone(), decl);
-                //     if let Some(val) = val_restore {
-                //         env.assign(name.lexeme.clone(), val);
-                //     }
-                // }
+                inner_env.update_parent(env);
             },
             Stmt::IfThen(cond, then_block, else_block) => {
                 match cond.interpret(env) {
@@ -127,12 +123,14 @@ impl super::Interpreter<()> for Stmt {
                 }
             },
             Stmt::Repeat(cond, block) => loop {
+                let inner_env = Environment::new(Some(Box::new(env.clone())));
                 block.interpret(env);
                 match cond.interpret(env) {
                     Literal::TRUE => {},
                     Literal::FALSE => break,
                     _ => panic!("Expected boolean expression")
                 }
+                inner_env.update_parent(env);
             },
             Stmt::WhileDo(cond, block) => loop {
                 match cond.interpret(env) {

@@ -161,6 +161,8 @@ impl Environment {
             } else { panic!("mismatched types of procedure argument") }
         }
         proc.run(&mut new_env);
+
+        new_env.update_parent(self);
     }
     pub fn call_func(&mut self, name: &String, arg_list: Vec<Literal>) -> Literal {
         let func = self.get_func(name);
@@ -172,7 +174,11 @@ impl Environment {
                 else { new_env.assign(func.arg_list[i].0.clone(), arg_list[i].clone()); }
             } else { panic!("mismatched types of function argument") }
         }
-        func.run(&mut new_env)
+        let ret = func.run(&mut new_env);
+        
+        new_env.update_parent(self);
+
+        ret
     }
 
     pub fn set_ret(&mut self, val: Literal) {
@@ -180,6 +186,10 @@ impl Environment {
     }
     pub fn reset_ret(&mut self) {
         self.ret = None;
+    }
+
+    pub fn update_parent(self, parent: &mut Environment) {
+        *parent = *self.parent_env.unwrap();
     }
 }
 
@@ -228,7 +238,7 @@ pub struct Proc {
 impl Proc {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>) -> Self { Self { block, arg_list } }
 
-    pub fn run(&self, env: &mut Environment) {
+    pub fn run<'a, 'b>(&self, env: &mut Environment) {
         self.block.interpret(env);
     }
 }
@@ -244,15 +254,16 @@ impl Func {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>, ret_type: Type) -> Self
     { Self { block, arg_list, ret_type } }
 
-    pub fn run(&self, env: &mut Environment) -> Literal {
+    pub fn run<'a, 'b>(&self, env: &mut Environment) -> Literal {
         self.block.interpret(env);
         match &env.ret {
             Some(ret) => if !(Type::from_literal(ret) == self.ret_type)
                 { panic!("mismatched type of return value") },
             None => panic!("expected RETURN statement"),
         }
+        let tmp = env.ret.clone().unwrap();
         env.reset_ret();
-        env.ret.clone().unwrap()
+        tmp
     }
 }
 
