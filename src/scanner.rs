@@ -33,6 +33,7 @@ impl Scanner {
                 map.insert("CALL".to_string(), TokenType::CALL);
                 map.insert("INPUT".to_string(), TokenType::INPUT);
                 map.insert("OUTPUT".to_string(), TokenType::OUTPUT);
+                map.insert("PRINT".to_string(), TokenType::OUTPUT);
                 map.insert("RETURN".to_string(), TokenType::RETURN);
                 map.insert("OPENFILE".to_string(), TokenType::OPENFILE);
                 map.insert("CLOSEFILE".to_string(), TokenType::CLOSEFILE);
