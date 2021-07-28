@@ -156,8 +156,8 @@ impl Parser {
             loop {
                 let byref;
                 if self.peak().ttype == TokenType::Identifier { byref = false }
-                else if self.peak().ttype == TokenType::BYREF { self.advance(); byref = false }
-                else if self.peak().ttype == TokenType::BYVALUE { self.advance(); byref = true }
+                else if self.peak().ttype == TokenType::BYREF { self.advance(); byref = true }
+                else if self.peak().ttype == TokenType::BYVALUE { self.advance(); byref = false }
                 else { break }
 
                 let name = self.advance();
@@ -191,8 +191,8 @@ impl Parser {
             loop {
                 let byref;
                 if self.peak().ttype == TokenType::Identifier { byref = false }
-                else if self.peak().ttype == TokenType::BYREF { self.advance(); byref = false }
-                else if self.peak().ttype == TokenType::BYVALUE { self.advance(); byref = true }
+                else if self.peak().ttype == TokenType::BYREF { self.advance(); byref = true }
+                else if self.peak().ttype == TokenType::BYVALUE { self.advance(); byref = false }
                 else { break }
 
                 let name = self.advance();

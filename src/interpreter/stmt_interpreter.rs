@@ -30,7 +30,10 @@ impl super::Interpreter<()> for Stmt {
             Stmt::ProcCall(name, args) => {
                 let mut arg_list = Vec::new();
                 for arg in args {
-                    arg_list.push(arg.interpret(env));
+                    let arg_name = if let Expr::IdentExpr(name) = arg {
+                        name.lexeme.clone()
+                    } else { "".into() };
+                    arg_list.push((arg_name, arg.interpret(env)));
                 }
                 env.call_proc(&name.lexeme, arg_list);
             },
@@ -104,14 +107,16 @@ impl super::Interpreter<()> for Stmt {
                 inner_env.update_parent(env);
             },
             Stmt::IfThen(cond, then_block, else_block) => {
+                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
                 match cond.interpret(env) {
-                    Literal::TRUE => then_block.interpret(env),
+                    Literal::TRUE => then_block.interpret(&mut inner_env),
                     Literal::FALSE => match else_block {
-                        Some(block) => block.interpret(env),
+                        Some(block) => block.interpret(&mut inner_env),
                         None => {}
                     },
                     _ => panic!("expected boolean expression")
                 };
+                inner_env.update_parent(env);
             },
             Stmt::Case(val, cases, otherwise) => {
                 let val = val.interpret(env);
@@ -122,23 +127,29 @@ impl super::Interpreter<()> for Stmt {
                     stmt.interpret(env)
                 }
             },
-            Stmt::Repeat(cond, block) => loop {
-                let inner_env = Environment::new(Some(Box::new(env.clone())));
-                block.interpret(env);
-                match cond.interpret(env) {
-                    Literal::TRUE => {},
-                    Literal::FALSE => break,
-                    _ => panic!("Expected boolean expression")
+            Stmt::Repeat(cond, block) => {
+                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
+                loop {
+                    block.interpret(&mut inner_env);
+                    match cond.interpret(&mut inner_env) {
+                        Literal::TRUE => {},
+                        Literal::FALSE => break,
+                        _ => panic!("Expected boolean expression")
+                    }
                 }
                 inner_env.update_parent(env);
             },
-            Stmt::WhileDo(cond, block) => loop {
-                match cond.interpret(env) {
-                    Literal::TRUE => {},
-                    Literal::FALSE => break,
-                    _ => panic!("Expected boolean expression")
+            Stmt::WhileDo(cond, block) => {
+                let mut inner_env = Environment::new(Some(Box::new(env.clone())));
+                loop {
+                    match cond.interpret(&mut inner_env) {
+                        Literal::TRUE => {},
+                        Literal::FALSE => break,
+                        _ => panic!("Expected boolean expression")
+                    }
+                    block.interpret(&mut inner_env);
                 }
-                block.interpret(env);
+                inner_env.update_parent(env);
             },
         }
     }

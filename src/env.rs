@@ -31,13 +31,23 @@ impl Environment {
     pub fn declare(&mut self, name: String, info: Decl)  -> Option<Decl> {
         self.decls.insert(name, info)
     }
-    pub fn assign(&mut self, name: String, val: Literal) -> Option<Literal> /*-> Result<Option<Literal>, RuntimeError>*/ {
+    pub fn assign(&mut self, mut name: String, val: Literal) -> Option<Literal> /*-> Result<Option<Literal>, RuntimeError>*/ {
         if self.decls.contains_key(&name) {
             let decl = self.decls.get(&name).unwrap();
             if decl.mutable {
-                let dtype = decl.dtype.clone();
+                let mut dtype = decl.dtype.clone();
+                let mut is_ref = false;
+                if let Type::Ref(inner) = dtype {
+                    if let Literal::Ref(_, og_name) = self.stack.get(&name).unwrap()  {
+                        name = og_name.clone();
+                        dtype = *inner;
+                        is_ref = true;
+                    } else {
+                        panic!("idek")
+                    }
+                }
                 if match val.clone() {
-                    Literal::TRUE => dtype == Type::Bool,
+                    Literal::TRUE |
                     Literal::FALSE => dtype == Type::Bool,
                     Literal::READ => todo!(),
                     Literal::WRITE => todo!(),
@@ -50,10 +60,13 @@ impl Environment {
                     Literal::Date(_, _, _) => dtype == Type::Date,
                     Literal::Type(_) => dtype == Type::Type,
                     Literal::Ref(lit, _) => dtype == Type::Ref(Box::new(Type::from_literal(lit.as_ref()))),
-                } {
-                    match val.clone() {
-                        Literal::Ref(_, name) => self.parent_env.clone().unwrap().stack.insert(name, val),
-                        _ => self.stack.insert(name, val)
+                } {  
+                    if is_ref {
+                        if let Some(env) = &mut self.parent_env
+                            { env.stack.insert(name, val) }
+                        else { panic!("reference somehow in root environment") }
+                    } else {
+                        self.stack.insert(name, val)
                     }
                 }
                 else { panic!("Type of variable does not match with value") }
@@ -80,7 +93,7 @@ impl Environment {
             if decl.mutable {
                 let dtype = decl.dtype.clone();
                 if match val.clone() {
-                    Literal::TRUE => dtype == Type::Bool,
+                    Literal::TRUE |
                     Literal::FALSE => dtype == Type::Bool,
                     Literal::READ => todo!(),
                     Literal::WRITE => todo!(),
@@ -98,13 +111,14 @@ impl Environment {
             } else { panic!("Cannot assign to constant") }
         } else {
             match &mut self.parent_env {
-                Some(env) => env.assign(name, val),
+                Some(env) => env.assign_parents(name, val),
                 None => None
             }
         }
     }
 
     pub fn get_stack(&self, name: &String) -> /*Result<Literal, RuntimeError>*/ Literal {
+        // println!("{:?} {}", self.stack, name);s
         match self.decls.get(name) {
             Some(_) => match self.stack.get(name).unwrap() {
                 Literal::Ref(lit, _) => *lit.clone(),
@@ -112,7 +126,7 @@ impl Environment {
             },
             None => match &self.parent_env {
                 Some(env) => env.get_stack(name),
-                None => panic!("reference to undefined variable")
+                None => panic!("reference to undefined variable {}", name)
             }
         }
     }
@@ -149,29 +163,32 @@ impl Environment {
         self.funcs.insert(name.clone(), Func::new(block, arg_list, ret_type));
     }
 
-    pub fn call_proc(&mut self, name: &String, arg_list: Vec<Literal>) {
+    pub fn call_proc(&mut self, name: &String, arg_list: Vec<(String, Literal)>) {
         let proc = self.get_proc(name);
         let mut new_env = Environment::new(Some(Box::new(self.clone())));
         if proc.arg_list.len() != arg_list.len() { panic!("wrong number of arguments") }
         for i in 0..proc.arg_list.len() {
-            if Type::from_literal(&arg_list[i]) == proc.arg_list[i].1 {
+            if Type::from_literal(&arg_list[i].1) == proc.arg_list[i].1 {
+                println!("{:?}", arg_list[i]);
                 if proc.arg_list[i].2 {
-                    new_env.assign(proc.arg_list[i].0.clone(), Literal::Ref(Box::new(arg_list[i].clone()), proc.arg_list[i].0.clone()));
-                } else { new_env.assign(proc.arg_list[i].0.clone(), arg_list[i].clone()); }
+                    new_env.assign(proc.arg_list[i].0.clone(), Literal::Ref(Box::new(arg_list[i].1.clone()), arg_list[i].0.clone()));
+                } else { new_env.assign(proc.arg_list[i].0.clone(), arg_list[i].1.clone()); }
             } else { panic!("mismatched types of procedure argument") }
         }
         proc.run(&mut new_env);
 
         new_env.update_parent(self);
     }
-    pub fn call_func(&mut self, name: &String, arg_list: Vec<Literal>) -> Literal {
+    pub fn call_func(&mut self, name: &String, arg_list: Vec<(String, Literal)>) -> Literal {
         let func = self.get_func(name);
         let mut new_env = Environment::new(Some(Box::new(self.clone())));
         if func.arg_list.len() != arg_list.len() { panic!("wrong number of arguments") }
         for i in 0..func.arg_list.len() {
-            if Type::from_literal(&arg_list[i]) == func.arg_list[i].1 {
-                if func.arg_list[i].2 {  }
-                else { new_env.assign(func.arg_list[i].0.clone(), arg_list[i].clone()); }
+            if Type::from_literal(&arg_list[i].1) == func.arg_list[i].1 {
+                if func.arg_list[i].2 {
+                    new_env.assign(func.arg_list[i].0.clone(), Literal::Ref(Box::new(arg_list[i].1.clone()), arg_list[i].0.clone()));
+                }
+                else { new_env.assign(func.arg_list[i].0.clone(), arg_list[i].1.clone()); }
             } else { panic!("mismatched types of function argument") }
         }
         let ret = func.run(&mut new_env);
@@ -238,7 +255,7 @@ pub struct Proc {
 impl Proc {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>) -> Self { Self { block, arg_list } }
 
-    pub fn run<'a, 'b>(&self, env: &mut Environment) {
+    pub fn run(&self, env: &mut Environment) {
         self.block.interpret(env);
     }
 }
@@ -254,7 +271,7 @@ impl Func {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>, ret_type: Type) -> Self
     { Self { block, arg_list, ret_type } }
 
-    pub fn run<'a, 'b>(&self, env: &mut Environment) -> Literal {
+    pub fn run(&self, env: &mut Environment) -> Literal {
         self.block.interpret(env);
         match &env.ret {
             Some(ret) => if !(Type::from_literal(ret) == self.ret_type)

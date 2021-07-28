@@ -296,7 +296,10 @@ impl super::Interpreter<Literal> for Expr {
             Expr::FnCall(name, args) => {
                 let mut arg_list = Vec::new();
                 for arg in args {
-                    arg_list.push(arg.interpret(env));
+                    let arg_name = if let Expr::IdentExpr(name) = arg {
+                        name.lexeme.clone()
+                    } else { "".into() };
+                    arg_list.push((arg_name, arg.interpret(env)));
                 }
                 env.call_func(&name.lexeme, arg_list)
             },
