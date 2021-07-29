@@ -169,7 +169,6 @@ impl Environment {
         if proc.arg_list.len() != arg_list.len() { panic!("wrong number of arguments") }
         for i in 0..proc.arg_list.len() {
             if Type::from_literal(&arg_list[i].1) == proc.arg_list[i].1 {
-                println!("{:?}", arg_list[i]);
                 if proc.arg_list[i].2 {
                     new_env.assign(proc.arg_list[i].0.clone(), Literal::Ref(Box::new(arg_list[i].1.clone()), arg_list[i].0.clone()));
                 } else { new_env.assign(proc.arg_list[i].0.clone(), arg_list[i].1.clone()); }

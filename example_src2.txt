@@ -2,14 +2,15 @@ I <- "A"
 Var <- "H"
 
 FUNCTION Func(MasterName: STRING) RETURNS INTEGER
-  Var <- "I"
+  Var <- "E"
   FOR I <- 1 TO 10 STEP 5
     REPEAT
+      Var <- "R"
       OUTPUT "What's your name?"
       INPUT Name
       CASE OF Name
         MasterName : OUTPUT "Salve, domine!"
-        "Mad" : OUTPUT "OH GOD NO"
+        "Mad" : PRINT "OH GOD NO"
         OTHERWISE : OUTPUT "Hello, ", Name
       ENDCASE
     UNTIL Name <> "Mad"
@@ -17,6 +18,6 @@ FUNCTION Func(MasterName: STRING) RETURNS INTEGER
   RETURN 1
 ENDFUNCTION
 
-OUTPUT Func("Zaryab")
+PRINT Func("Zaryab")
 OUTPUT I
-OUTPUT Var
+PRINT Var
