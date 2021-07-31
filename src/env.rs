@@ -118,7 +118,7 @@ impl Environment {
     }
 
     pub fn get_stack(&self, name: &String) -> /*Result<Literal, RuntimeError>*/ Literal {
-        // println!("{:?} {}", self.stack, name);s
+        // println!("{:?} {}", self.stack, name);
         match self.decls.get(name) {
             Some(_) => match self.stack.get(name).unwrap() {
                 Literal::Ref(lit, _) => *lit.clone(),
