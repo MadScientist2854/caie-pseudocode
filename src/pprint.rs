@@ -13,6 +13,8 @@ impl PPrint for Expr {
             Expr::IdentExpr(name) => name.lexeme.clone(),
             Expr::FnCall(_, _) => todo!(),
             Expr::Literal(value) => value.clone().to_string(),
+            Expr::ArrIdx(_, _, _) => todo!(),
+            Expr::ArrType(_, _, _) => todo!(),
         }
     }
 }

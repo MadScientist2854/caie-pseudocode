@@ -114,6 +114,7 @@ pub enum Literal {
     Char(char), //''
     String(String), //""
     Date(i8, i8, i16), // dd/mm/yyyy
+    Array(Vec<Literal>),
 
     Type(Type),
     Ref(Box<Literal>, String)
@@ -135,6 +136,15 @@ impl Literal {
             Literal::Date(d, m, y) => format!("{}/{}/{}", d, m, y),
             Literal::Type(inner) => format!("{:?}", inner),
             Literal::Ref(val, _) => format!("&{}", val.to_string()),
+            Literal::Array(vals) => {
+                let mut string = "[ ".to_string();
+                for val in vals {
+                    string.push_str(val.to_string().as_str());
+                    string.push(' ');
+                }
+                string.push(']');
+                string
+            },
         }
     }
 }

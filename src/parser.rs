@@ -19,8 +19,8 @@ impl Parser {
         match self.program() {
             Ok(prog) => prog,
             Err(err) => match err.token.ttype {
-                TokenType::End => panic!("error at end: {}", err.msg),
-                _ => panic!("error at token {}: {}", err.token, err.msg)
+                TokenType::End => panic!("parse error at end: {}", err.msg),
+                _ => panic!("parse error at token {}: {}", err.token, err.msg)
             }
         }
     }
@@ -421,8 +421,55 @@ impl Parser {
                         else { return Err(ParseError::new(self.peak(), "Expected ')' token".into())) }
                         Ok(Expr::FnCall(tkn, arg_list))
                     },
+                    TokenType::LeftBracket => {
+                        self.advance();
+                        let expr1 = self.expr()?;
+                        let mut expr2 = None;
+                        if self.peak().ttype == TokenType::Comma {
+                            self.advance();
+                            expr2 = Some(Box::new(self.expr()?));
+                        }
+                        if self.peak().ttype != TokenType::RightBracket {
+                            Err(ParseError::new(self.peak(), "unterminated array index".into()))
+                        } else {
+                            self.advance();
+                            Ok(Expr::ArrIdx(tkn, Box::new(expr1), expr2))
+                        }
+                    },
                     _ => Ok(Expr::IdentExpr(tkn))
                 }
+            },
+            TokenType::ARRAY => {
+                self.advance();
+                if self.peak().ttype != TokenType::LeftBracket
+                    { return Err(ParseError::new(self.peak(), "expected `[`".into())) }
+                self.advance();
+                let idx1start = self.expr()?;
+                if self.peak().ttype != TokenType::Colon
+                    { return Err(ParseError::new(self.peak(), "expected `:`".into())) }
+                self.advance();
+                let idx1end = self.expr()?;
+                let mut idx2start = None;
+                let mut idx2end = None;
+                if self.peak().ttype == TokenType::Comma {
+                    self.advance();
+                    idx2start = Some(self.expr()?);
+                    if self.peak().ttype != TokenType::Colon
+                        { return Err(ParseError::new(self.peak(), "expected `:`".into())) }
+                    self.advance();
+                    idx2end = Some(self.expr()?);
+                }
+                if self.peak().ttype != TokenType::RightBracket
+                    { return Err(ParseError::new(self.peak(), "expected `]`".into())) }
+                self.advance();
+                if self.peak().ttype != TokenType::OF
+                    { return Err(ParseError::new(self.peak(), "expected OF".into())) }
+                self.advance();
+                let dtype = self.expr()?;
+                let idx2 = idx2start.map(move |idx2start| {
+                    (Box::new(idx2start), Box::new(idx2end.unwrap()))
+                });
+                Ok(Expr::ArrType((Box::new(idx1start), Box::new(idx1end)), idx2, Box::new(dtype)))
             },
             TokenType::LeftParen => {
                 self.advance();

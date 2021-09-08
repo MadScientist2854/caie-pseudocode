@@ -3,10 +3,24 @@ PROCEDURE INCREMENT(BYREF X: REAL)
 ENDPROCEDURE
 
 PROCEDURE PrintFibonacci(Len: INTEGER)
-	//
+    DECLARE arr: ARRAY[1:Len] OF INTEGER
+	x <- 0
+    y <- 1
+
+    FOR i <- 1 TO Len
+        arr[i] <- y
+        OUTPUT arr[i]
+        tmp <- x + y
+        x <- y
+        y <- tmp
+    ENDFOR
+
+    OUTPUT arr
 ENDPROCEDURE
 
 MyVar <- 10.5
 OUTPUT MyVar
 CALL INCREMENT(MyVar)
 OUTPUT MyVar
+CALL PrintFibonacci(10)
+PRINT 5/2

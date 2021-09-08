@@ -45,7 +45,7 @@ fn parse_file(path: String) -> Result<()> {
             prog.interpret(&mut env);
         },
         // Err((line, message)) => {println!("{}", message)}
-        Err(_) => {}
+        Err(err) => { err.print() }
     }
 
     Ok(())

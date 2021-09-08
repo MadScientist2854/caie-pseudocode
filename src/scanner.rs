@@ -84,7 +84,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, ()> {
+    pub fn scan_tokens(&mut self) -> Result<Vec<Token>, ScannerError> {
         let mut tokens: Vec<Token> = Vec::new();
         while !self.is_at_end() {
             tokens.push(self.scan_token()?);
@@ -94,16 +94,14 @@ impl Scanner {
         Ok(tokens)
     }
 
-    fn scan_token(&mut self) -> Result<Token, ()> {
+    fn scan_token(&mut self) -> Result<Token, ScannerError> {
         let c = self.advance();
 
         let t = match c {
             ' '|'\r'|'\t' => { self.start = self.current; self.scan_token()? }, // Ignore whitespace
             '/' => if self.peak() == '/' {
                 self.advance();
-                while self.peak() != '\n' && self.peak() != '\0' {
-                    self.advance();
-                }
+                while self.advance() != '\n' && self.peak() != '\0' { }
                 self.start = self.current;
                 self.scan_token()?
             } else { self.new_token(TokenType::Slash) },
@@ -163,7 +161,7 @@ impl Scanner {
                 self.scan_digit()
             } else if c.is_alphabetic() {
                 self.scan_ident()
-            } else { return Err(()) }
+            } else { return Err(ScannerError::new(format!("unexpected character {}", c), self.line)) }
             // TODO scan date literals
         };
 
@@ -175,24 +173,20 @@ impl Scanner {
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
-
     fn new_token(&self, ttype: TokenType) -> Token {
         let text = self.source.get(self.start..self.current).unwrap().to_string();
 
         Token::new(ttype, text, self.line)
     }
-
     fn advance(&mut self) -> char {
         self.current += 1;
 
         self.source.chars().nth(self.current - 1).unwrap()
     }
-
     fn peak(&self) -> char {
         if self.is_at_end() { '\0' }
         else { self.source.chars().nth(self.current).unwrap() }
     }
-
     fn peak_next(&self) -> char {
         if self.is_at_end() { '\0' }
         else { self.source.chars().nth(self.current + 1).unwrap() }
@@ -217,7 +211,6 @@ impl Scanner {
             )))
         }
     }
-
     fn scan_ident(&mut self) -> Token {
         while self.peak().is_alphanumeric() {
             self.advance();
@@ -226,5 +219,17 @@ impl Scanner {
         if let Some(ttype) = self.keywords.get(&text) {
             self.new_token(ttype.clone())
         } else { self.new_token(TokenType::Identifier) }
+    }
+}
+
+pub struct ScannerError {
+    msg: String,
+    line: usize
+}
+
+impl ScannerError {
+    pub fn new(msg: String, line: usize) -> Self { Self { msg, line } }
+    pub fn print(&self) {
+        println!("scanner err at line {}: {}", self.line, self.msg)
     }
 }

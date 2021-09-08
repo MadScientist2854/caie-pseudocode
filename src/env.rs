@@ -46,21 +46,7 @@ impl Environment {
                         panic!("idek")
                     }
                 }
-                if match val.clone() {
-                    Literal::TRUE |
-                    Literal::FALSE => dtype == Type::Bool,
-                    Literal::READ => todo!(),
-                    Literal::WRITE => todo!(),
-                    Literal::APPEND => todo!(),
-                    Literal::RANDOM => todo!(),
-                    Literal::Int(_) => dtype == Type::Int,
-                    Literal::Float(_) => dtype == Type::Float,
-                    Literal::Char(_) => dtype == Type::Char,
-                    Literal::String(_) => dtype == Type::String,
-                    Literal::Date(_, _, _) => dtype == Type::Date,
-                    Literal::Type(_) => dtype == Type::Type,
-                    Literal::Ref(lit, _) => dtype == Type::Ref(Box::new(Type::from_literal(lit.as_ref()))),
-                } {  
+                if dtype == Type::from_literal(&val) {
                     if is_ref {
                         if let Some(env) = &mut self.parent_env
                             { env.stack.insert(name, val) }
@@ -69,7 +55,7 @@ impl Environment {
                         self.stack.insert(name, val)
                     }
                 }
-                else { panic!("Type of variable does not match with value") }
+                else { panic!(format!("Type of variable {:?} does not match with value {:?}", dtype, val)) }
             } else { panic!("Cannot assign to constant") }
         } else {
             match &mut self.parent_env {
@@ -87,26 +73,21 @@ impl Environment {
             }
         }
     }
+    pub fn assign_idx(&mut self, name: String, idx: usize, val: Literal) -> Literal {
+        let vec = self.get_stack(&name);//.expect(format!("array {} doesn't exist", name).as_str());
+        let tmp = vec.clone();
+        let vec = if let Literal::Array(val) = vec { val }
+            else { panic!("variable is not an array") };
+        vec[idx-1] = val;
+        tmp
+    }
     fn assign_parents(&mut self, name: String, val: Literal) -> Option<Literal> /*-> Result<Option<Literal>, RuntimeError>*/ {
         if self.decls.contains_key(&name) {
             let decl = self.decls.get(&name).unwrap();
             if decl.mutable {
                 let dtype = decl.dtype.clone();
-                if match val.clone() {
-                    Literal::TRUE |
-                    Literal::FALSE => dtype == Type::Bool,
-                    Literal::READ => todo!(),
-                    Literal::WRITE => todo!(),
-                    Literal::APPEND => todo!(),
-                    Literal::RANDOM => todo!(),
-                    Literal::Int(_) => dtype == Type::Int,
-                    Literal::Float(_) => dtype == Type::Float,
-                    Literal::Char(_) => dtype == Type::Char,
-                    Literal::String(_) => dtype == Type::String,
-                    Literal::Date(_, _, _) => dtype == Type::Date,
-                    Literal::Type(_) => dtype == Type::Type,
-                    Literal::Ref(lit, _) => dtype == Type::Ref(Box::new(Type::from_literal(lit.as_ref()))),
-                } { self.stack.insert(name, val) }
+                if dtype == Type::from_literal(&val)
+                    { self.stack.insert(name, val) }
                 else { panic!("Type of variable does not match with value") }
             } else { panic!("Cannot assign to constant") }
         } else {
@@ -117,14 +98,13 @@ impl Environment {
         }
     }
 
-    pub fn get_stack(&self, name: &String) -> /*Result<Literal, RuntimeError>*/ Literal {
-        // println!("{:?} {}", self.stack, name);
+    pub fn get_stack(&mut self, name: &String) -> /*Result<Literal, RuntimeError>*/ &mut Literal {
         match self.decls.get(name) {
-            Some(_) => match self.stack.get(name).unwrap() {
-                Literal::Ref(lit, _) => *lit.clone(),
-                lit => lit.clone()
+            Some(_) => match self.stack.get_mut(name).unwrap() {
+                Literal::Ref(lit, _) => &mut **lit,
+                lit => lit
             },
-            None => match &self.parent_env {
+            None => match &mut self.parent_env {
                 Some(env) => env.get_stack(name),
                 None => panic!("reference to undefined variable {}", name)
             }
@@ -218,6 +198,7 @@ pub enum Type {
     Char,
     String,
     Date,
+    Array(Box<Type>, (usize, usize), Option<(usize, usize)>),
     //UDT(UDT)
 
     Proc,
@@ -241,6 +222,11 @@ impl Type {
             Literal::Date(_, _, _) => Type::Date,
             Literal::Type(_) => todo!(),
             Literal::Ref(lit, _) => Type::Ref(Box::new(Type::from_literal(lit))),
+            Literal::Array(exprs) => Type::Array(
+                Box::new(exprs.first().map(|lit| Type::from_literal(lit)).unwrap_or(Type::Bool)),
+                (1, exprs.len()),
+                None
+            ), // TODO: allow starting index other than 1, and allow second dimension, and decide on empty array type
         }
     }
 }
@@ -250,7 +236,6 @@ pub struct Proc {
     block: Stmt,
     arg_list: Vec<(String, Type, bool)>
 }
-
 impl Proc {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>) -> Self { Self { block, arg_list } }
 
@@ -265,7 +250,6 @@ pub struct Func {
     arg_list: Vec<(String, Type, bool)>,
     ret_type: Type
 }
-
 impl Func {
     pub fn new(block: Stmt, arg_list: Vec<(String, Type, bool)>, ret_type: Type) -> Self
     { Self { block, arg_list, ret_type } }
@@ -288,7 +272,6 @@ pub struct Decl {
     mutable: bool,
     dtype: Type
 }
-
 impl Decl {
     pub fn new(mutable: bool, dtype: Type) -> Self { Self { mutable, dtype } }
 }

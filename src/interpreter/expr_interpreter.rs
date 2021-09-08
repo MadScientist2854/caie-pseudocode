@@ -1,4 +1,4 @@
-use crate::{token::{Literal, TokenType}, expr::Expr, env::Environment};
+use crate::{env::{Environment, Type}, expr::Expr, token::{Literal, TokenType}};
 
 impl super::Interpreter<Literal> for Expr {
     fn interpret(&self, env: &mut Environment) -> Literal {
@@ -20,7 +20,7 @@ impl super::Interpreter<Literal> for Expr {
                 TokenType::Equal => if left.interpret(env) == right.interpret(env) { Literal::TRUE }
                     else { Literal::FALSE },
                 TokenType::NotEqual => if left.interpret(env) == right.interpret(env) { Literal::FALSE }
-                else { Literal::TRUE },
+                    else { Literal::TRUE },
                 // TokenType::Period => todo!(),
                 TokenType::Star => {
                     let left = left.interpret(env);
@@ -49,21 +49,18 @@ impl super::Interpreter<Literal> for Expr {
                     }
                 },
                 TokenType::Slash => {
-                    let left = left.interpret(env);
-                    let right = right.interpret(env);
-                    match left {
-                        Literal::Int(left_i) => match right {
-                            Literal::Int(right_i) => Literal::Int(left_i / right_i),
-                            Literal::Float(right_f) => Literal::Float(left_i as f32 / right_f),
-                            _ => panic!("expected numerical value")
-                        },
-                        Literal::Float(left_f) => match right {
-                            Literal::Int(right_i) => Literal::Float(left_f / right_i as f32),
-                            Literal::Float(right_f) => Literal::Float(left_f / right_f),
-                            _ => panic!("expected numerical value")
-                        },
-                        _ => panic!("expected numerical value")
-                    }
+                    let left = match left.interpret(env) {
+                        Literal::Int(i) => i as f32,
+                        Literal::Float(f) => f,
+                        _ =>panic!("expected numerical value")
+                    };
+                    let right = match right.interpret(env) {
+                        Literal::Int(i) => i as f32,
+                        Literal::Float(f) => f,
+                        _ =>panic!("expected numerical value")
+                    };
+                    
+                    Literal::Float(left / right)
                 },
                 TokenType::Plus => {
                     let left = left.interpret(env);
@@ -292,7 +289,7 @@ impl super::Interpreter<Literal> for Expr {
                 _ => todo!()
             },
             Expr::Grouping(inner) => inner.interpret(env),
-            Expr::IdentExpr(name) => env.get_stack(&name.lexeme),
+            Expr::IdentExpr(name) => env.get_stack(&name.lexeme).clone(),
             Expr::FnCall(name, args) => {
                 let mut arg_list = Vec::new();
                 for arg in args {
@@ -304,6 +301,31 @@ impl super::Interpreter<Literal> for Expr {
                 env.call_func(&name.lexeme, arg_list)
             },
             Expr::Literal(lit) => lit.clone(),
+            Expr::ArrIdx(name, idx1, _) => {
+                let val = env.get_stack(&name.lexeme).clone();
+                let idx1 = if let Literal::Int(n) = idx1.interpret(env) { n as usize }
+                    else { panic!("expected integer") };
+                if let Literal::Array(arr) = val {
+                    arr[idx1-1].clone()
+                } else { Expr::IdentExpr(name.clone()).interpret(env) }
+            },
+            Expr::ArrType(idx1, idx2, dtype) => {
+                let idx1start = if let Literal::Int(n) = idx1.0.interpret(env) { n as usize }
+                    else { panic!("expected integer") };
+                let idx1end = if let Literal::Int(n) = idx1.1.interpret(env) { n as usize }
+                    else { panic!("expected integer") };
+                let idx1 = (idx1start, idx1end-idx1start+1);
+                let idx2 = idx2.clone().map(|(idx2start, idx2end)| {
+                    let idx2start = if let Literal::Int(n) = idx2start.interpret(env) { n as usize }
+                        else { panic!("expected integer") };
+                    (idx2start,
+                    if let Literal::Int(n) = idx2end.interpret(env) { (n-(idx2start as i32)+1) as usize }
+                        else { panic!("expected integer") })
+                });
+                let dtype = if let Literal::Type(t) = dtype.interpret(env) { t }
+                    else { panic!("expected integer") };
+                Literal::Type(Type::Array(Box::new(dtype), idx1, idx2))
+            },
         }
     }
 }

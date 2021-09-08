@@ -74,7 +74,8 @@ if __name__ == "__main__":
         "Grouping | Expr",
         "IdentExpr | Token",
         "FnCall | Token, Vec<Expr>",
-        # "ArrayExpr | Type, size, ",
+        "ArrIdx | Token, Expr, Option<Box<Expr>>",
+        "ArrType | (Box<Expr>, Box<Expr>), Option<(Box<Expr>, Box<Expr>)>, Expr",
         "Literal | Literal"
     ])
     define_ast(out_dir, "Stmt", [

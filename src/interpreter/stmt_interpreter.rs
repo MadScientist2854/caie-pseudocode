@@ -13,6 +13,18 @@ impl super::Interpreter<()> for Stmt {
                     _ => panic!("expected type")
                 };
                 env.declare(name.lexeme.clone(), Decl::new(true, dtype.clone()));
+                if let Type::Array(inner_type, (_, idx1len), _) = dtype {
+                    let mut default_val = Vec::new();
+                    let lit = match *inner_type {
+                        Type::Bool => Literal::FALSE,
+                        Type::Int => Literal::Int(0),
+                        Type::Char => Literal::Char(0 as char),
+                        Type::String => Literal::String("".into()),
+                        _ => panic!(format!("{:?}", inner_type))
+                    };
+                    default_val.resize(idx1len, lit);
+                    env.assign(name.lexeme.clone(), Literal::Array(default_val));
+                }
             },
             Stmt::Constant(name, val) => {
                 let val = val.interpret(env);
@@ -21,11 +33,16 @@ impl super::Interpreter<()> for Stmt {
             },
             Stmt::Assign(name, val) => {
                 let val = val.interpret(env);
-                let name = match name {
-                    Expr::IdentExpr(tkn) => tkn.lexeme.clone(),
+                let (name, idx1) = match name {
+                    Expr::IdentExpr(tkn) => (tkn.lexeme.clone(), None),
+                    Expr::ArrIdx(name, idx1, _) => (name.lexeme.clone(), Some(idx1)),
                     _ => panic!("expected identifier")
                 };
-                env.assign(name, val);
+                if let Some(idx1) = idx1 {
+                    let idx1 = if let Literal::Int(n) = idx1.interpret(env) { n as usize }
+                        else { panic!("expected integer") };
+                    env.assign_idx(name, idx1, val);
+                } else { env.assign(name.clone(), val); }
             },
             Stmt::ProcCall(name, args) => {
                 let mut arg_list = Vec::new();
@@ -97,7 +114,7 @@ impl super::Interpreter<()> for Stmt {
                 loop {
                     block.interpret(&mut inner_env);
                     let prev = if let Literal::Int(val) =
-                        inner_env.get_stack(&name.lexeme) { val }
+                        inner_env.get_stack(&name.lexeme) { val.clone() }
                     else { panic!("expected integer expression3") };
                     let next = prev + step;
                     if next > val2 { break }

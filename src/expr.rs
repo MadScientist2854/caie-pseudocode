@@ -8,5 +8,7 @@ pub enum Expr {
     Grouping(Box<Expr>),
     IdentExpr(Token),
     FnCall(Token, Vec<Expr>),
+    ArrIdx(Token, Box<Expr>, Option<Box<Expr>>),
+    ArrType((Box<Expr>, Box<Expr>), Option<(Box<Expr>, Box<Expr>)>, Box<Expr>),
     Literal(Literal),
 }
