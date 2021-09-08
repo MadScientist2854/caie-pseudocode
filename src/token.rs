@@ -42,9 +42,6 @@ pub enum TokenType {
 
     // Keywords
     //// Primitives
-    BOOLEAN,
-    INTEGER, REAL,
-    CHAR, STRING,
     DATE,
     ARRAY,
     //// Single-line statements
