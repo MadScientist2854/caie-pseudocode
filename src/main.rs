@@ -19,6 +19,8 @@ fn main() -> Result<()> {
 
     if args.len() == 2 {
         parse_file(args[1].clone())?;
+    } else if args.len() == 1 {
+        parse_file("source.txt".to_string())?;
     } else {
         println!(r#"Usage: camps <file name>"#)
     }
