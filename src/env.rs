@@ -55,7 +55,7 @@ impl Environment {
                         self.stack.insert(name, val)
                     }
                 }
-                else { panic!(format!("Type of variable {:?} does not match with value {:?}", dtype, val)) }
+                else { panic!("Type of variable {:?} does not match with value {:?}", dtype, val) }
             } else { panic!("Cannot assign to constant") }
         } else {
             match &mut self.parent_env {

@@ -20,7 +20,7 @@ impl super::Interpreter<()> for Stmt {
                         Type::Int => Literal::Int(0),
                         Type::Char => Literal::Char(0 as char),
                         Type::String => Literal::String("".into()),
-                        _ => panic!(format!("{:?}", inner_type))
+                        _ => panic!("{:?}", inner_type)
                     };
                     default_val.resize(idx1len, lit);
                     env.assign(name.lexeme.clone(), Literal::Array(default_val));
