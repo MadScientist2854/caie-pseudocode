@@ -15,13 +15,13 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Stmt {
+    pub fn parse(&mut self) -> Option<Stmt> {
         match self.program() {
-            Ok(prog) => prog,
-            Err(err) => match err.token.ttype {
-                TokenType::End => panic!("parse error at end: {}", err.msg),
-                _ => panic!("parse error at token {}: {}", err.token, err.msg)
-            }
+            Ok(prog) => Some(prog),
+            Err(err) => { match err.token.ttype {
+                TokenType::End => println!("parse error at end: {}", err.msg),
+                _ => println!("parse error at token {}: {}", err.token, err.msg)
+            }; None }
         }
     }
 

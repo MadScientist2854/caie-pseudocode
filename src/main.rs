@@ -37,16 +37,12 @@ fn parse_file(path: String) -> Result<()> {
     let mut scanner = Scanner::new(contents);
     match scanner.scan_tokens() {
         Ok(tokens) => {
-            // for token in tokens.clone() {
-            //     println!("{}", token);
-            // }
             let mut parser = Parser::new(tokens);
-            let prog = parser.parse();
-            // println!("{:?}", stmts);
-            let mut env = Environment::new(None);
-            prog.interpret(&mut env);
+            if let Some(prog) = parser.parse() {
+                let mut env = Environment::new(None);
+                prog.interpret(&mut env);
+            }
         },
-        // Err((line, message)) => {println!("{}", message)}
         Err(err) => { err.print() }
     }
 
