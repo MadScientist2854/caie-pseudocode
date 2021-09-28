@@ -10,9 +10,10 @@ Download one of these files depending on your operating system:
  - Linux 32-bit: 
  - Linux 64-bit: 
  - Mac: if you have a Mac and are willing to compile an executable for me, please contact me on Discord at MadScientist#6032
-create a file in the same folder as the downloaded file called `source.txt`. write your code in `source.txt`, then run the downloaded file (as long as you didn't rename it, it should be called `PseudocodeInterpreter`). A window should pop up that either shows the output or the errors in your program.
+
+create a file in the same folder as the downloaded file called `source.txt`. write your code in `source.txt`, then run the downloaded file (as long as you didn't rename it, it should be called `PseudocodeInterpreter`). a window should pop up that either shows the output or the errors in your program.
 
 ## Manually Compiling
 install cargo and the rust compiler, and run `cargo run <source code file>`
 
-Note: the normal order of operations (PEMDAS/BODMAS) is used for arithmetic operators, because the specification doesn't actually say what order should be used. comparison operators (`>`, `<`, etc.) come next after arithmetic operators. the boolean operations `AND` and `OR` come after those. `=` and `<>` come last in the precedence. the boolean operation `NOT` comes before the arithmetic operators
+Note: the normal order of operations (PEMDAS/BODMAS) is used for arithmetic operators, though the specification doesn't actually say what order should be used. comparison operators (`>`, `<`, etc.) come next after arithmetic operators. the boolean operations `AND` and `OR` come after those. `=` and `<>` come last in the precedence. the boolean operation `NOT` comes before the arithmetic operators
